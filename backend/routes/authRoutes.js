@@ -41,6 +41,11 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ msg: 'Invalid credentials' });
     }
 
+     // 👇 Google-auth check here
+    if (!user.password || user.password === 'google-auth') {
+      return res.status(403).json({ msg: 'Password not set. Please sign in with Google.' });
+    }
+
     // Check if password is correct
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
@@ -60,3 +65,23 @@ router.post('/login', async (req, res) => {
 });
 
 module.exports = router;
+
+
+router.post('/google-login', async (req, res) => {
+  const { name, email } = req.body;
+
+  try {
+    let user = await User.findOne({ email });
+
+    if (!user) {
+      user = new User({ name, email, password: 'google-auth' });
+      await user.save();
+    }
+
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    res.json({ token });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Server Error");
+  }
+});
