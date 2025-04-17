@@ -21,9 +21,27 @@ const Login = () => {
     e.preventDefault();
     try {
       const response = await axios.post("http://localhost:5000/api/auth/login", formData);
+      
+      // Store token and userType in localStorage
       localStorage.setItem("token", response.data.token);
+      localStorage.setItem("userType", response.data.userType); 
+  
       alert("Login successful!");
-      navigate("/dashboard");
+  
+      // Get the userType from localStorage
+      const userType = localStorage.getItem("userType");
+  
+      // Redirect based on userType
+      if (userType === "Admin") {
+        // Redirect to Admin Dashboard if the user is an admin
+        navigate("/admin-dashboard");
+      } else if (userType === "Shelter") {
+        // Redirect to Shelter Dashboard if the user is a shelter
+        navigate("/shelter-dashboard");
+      } else {
+        // Redirect to User Dashboard if the user is an individual user
+        navigate("/user-dashboard");
+      }
     } catch (error) {
       if (error.response?.status === 403) {
         alert("Password not set. Please sign in with Google.");
@@ -33,6 +51,7 @@ const Login = () => {
       console.error("Login error:", error);
     }
   };
+  
 
   return (
     <div style={styles.container}>

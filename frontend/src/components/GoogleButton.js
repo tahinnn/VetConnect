@@ -17,9 +17,15 @@ const GoogleButton = () => {
         email,
       });
 
+      // Temporarily assign role; later this can come from backend
+      const userType = "Individual";
+      localStorage.setItem("userType", userType);
+
       localStorage.setItem("token", response.data.token);
       alert("Google Login successful!");
-      navigate("/dashboard");
+
+      // Redirect based on role
+      navigate(userType === "Shelter" ? "/shelter-dashboard" : "/user-dashboard");
     } catch (err) {
       console.error("Google login error:", err);
       alert("Google login failed");
@@ -27,14 +33,28 @@ const GoogleButton = () => {
   };
 
   return (
-    <GoogleLogin
-      onSuccess={handleGoogleSuccess}
-      onError={() => {
-        console.log("Google Login Failed");
-        alert("Google Login Failed");
-      }}
-    />
+    <div style={styles.wrapper}>
+      <GoogleLogin
+        onSuccess={handleGoogleSuccess}
+        onError={() => {
+          console.log("Google Login Failed");
+          alert("Google Login Failed");
+        }}
+        width="100%"
+        theme="outline"
+        size="large"
+        shape="rectangular"
+      />
+    </div>
   );
+};
+
+const styles = {
+  wrapper: {
+    marginTop: "10px",
+    display: "flex",
+    justifyContent: "center",
+  },
 };
 
 export default GoogleButton;

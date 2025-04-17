@@ -9,6 +9,9 @@ import {
 import Register from "./components/Register";
 import Login from "./components/Login";
 import UserTypeSelect from "./components/UserTypeSelect";
+import UserDashboard from "./components/UserDashboard";
+import ShelterDashboard from "./components/ShelterDashboard";
+import AdminDashboard from './components/AdminDashboard';
 import { GoogleOAuthProvider } from "@react-oauth/google";
 
 // Google Client ID
@@ -27,6 +30,9 @@ function App() {
             <Route path="/register" element={<Register />} />
             <Route path="/login" element={<Login />} />
             <Route path="/select-user-type" element={<UserTypeSelect />} />
+            <Route path="/admin-dashboard" element={<AdminDashboard />} /> {/* Admin Dashboard Route */}
+            <Route path="/user-dashboard" element={<UserDashboard />} />
+            <Route path="/shelter-dashboard" element={<ShelterDashboard />} />
           </Routes>
         </div>
       </Router>

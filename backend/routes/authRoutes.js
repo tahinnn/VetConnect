@@ -1,87 +1,193 @@
+
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const isAdmin = require('../middleware/authMiddleware');  // Import the middleware
 const User = require('../models/User'); // Import the User model
 const router = express.Router();
 
-// Register route (Sign-Up)
-router.post('/register', async (req, res) => {
-  const { name, email, password } = req.body;
+
+
+// admin route
+router.get('/admin/users', isAdmin, async (req, res) => {
+  try {
+    const users = await User.find({});
+    res.json(users);
+  } catch (error) {
+    res.status(500).send('Server error');
+  }
+});
+
+
+// Update userType route to make someone an admin
+router.put('/admin/make-admin/:userId', isAdmin, async (req, res) => {
+  const { userId } = req.params;
 
   try {
-    // Check if user already exists
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(400).json({ msg: 'User already exists' });
+    // Check if the user exists
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ msg: 'User not found' });
     }
 
-    // Hash the password before saving
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
+    // Update the userType to 'Admin'
+    user.userType = 'Admin';
+    await user.save();
 
-    // Create a new user
-    const newUser = new User({ name, email, password: hashedPassword });
-    await newUser.save();
-
-    res.status(201).json({ msg: 'User registered successfully' });
+    res.json({ msg: 'User has been promoted to Admin', user });
   } catch (err) {
     console.error(err);
     res.status(500).send('Server error');
   }
 });
+
+
+
+
+// Get all users (Admin only)
+router.get('/admin/users', isAdmin, async (req, res) => {
+  try {
+    const users = await User.find({});
+    res.json(users);
+  } catch (error) {
+    res.status(500).send('Server error');
+  }
+});
+
+// Ban a user (Admin only)
+router.put('/admin/ban-user/:userId', isAdmin, async (req, res) => {
+  try {
+    const user = await User.findByIdAndUpdate(req.params.userId, { isBanned: true }, { new: true });
+    res.json({ msg: 'User banned successfully', user });
+  } catch (error) {
+    res.status(500).send('Server error');
+  }
+});
+
+// Get pet listings (Admin only)
+router.get('/admin/pets', isAdmin, async (req, res) => {
+  try {
+    const pets = await Pet.find({});
+    res.json(pets);
+  } catch (error) {
+    res.status(500).send('Server error');
+  }
+});
+
+// Approve a pet listing (Admin only)
+router.put('/admin/approve-pet/:petId', isAdmin, async (req, res) => {
+  try {
+    const pet = await Pet.findByIdAndUpdate(req.params.petId, { isApproved: true }, { new: true });
+    res.json({ msg: 'Pet listing approved', pet });
+  } catch (error) {
+    res.status(500).send('Server error');
+  }
+});
+
+
+
+//  Register route (Sign-Up)
+router.post('/register', async (req, res) => {
+  const { name, email, password, userType } = req.body;
+
+  try {
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ msg: 'User already exists. Please login.' });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    const newUser = new User({ name, email, password: hashedPassword, userType });
+    await newUser.save();
+
+    // Return the userId along with the success message
+    res.status(201).json({ msg: 'User registered successfully', userId: newUser._id });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Server error');
+  }
+});
+
 
 // Login route
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    // Check if user exists
     const user = await User.findOne({ email });
     if (!user) {
       return res.status(400).json({ msg: 'Invalid credentials' });
     }
 
-     // 👇 Google-auth check here
     if (!user.password || user.password === 'google-auth') {
       return res.status(403).json({ msg: 'Password not set. Please sign in with Google.' });
     }
 
-    // Check if password is correct
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(400).json({ msg: 'Invalid credentials' });
     }
 
-    // Generate JWT token
     const payload = { userId: user._id };
     const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' });
 
-    // Send the token in the response
-    res.json({ token });
+    res.json({ 
+      token,
+      userType: user.userType  // ✅ Send user type (User or Shelter)
+    });
+
   } catch (err) {
     console.error(err);
     res.status(500).send('Server error');
   }
 });
 
-module.exports = router;
-
-
+//  Google Login route
 router.post('/google-login', async (req, res) => {
-  const { name, email } = req.body;
+  const { name, email, userType } = req.body;
 
   try {
     let user = await User.findOne({ email });
 
     if (!user) {
-      user = new User({ name, email, password: 'google-auth' });
+      user = new User({ name, email, password: 'google-auth', userType });
       await user.save();
     }
 
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
-    res.json({ token });
+    res.json({ 
+      token,
+      userType: user.userType  // ✅ Return role here too
+    });
+
   } catch (error) {
     console.error(error);
     res.status(500).send("Server Error");
   }
 });
+
+//  Update userType route
+router.put('/update-user-type/:userId', async (req, res) => {
+  const { userType } = req.body;  // Get userType from the request body
+  const { userId } = req.params;  // Get userId from the request parameters
+
+  try {
+    // Find the user by userId and update the userType
+    const user = await User.findByIdAndUpdate(userId, { userType }, { new: true });
+
+    // If user is not found, return a 404 error
+    if (!user) {
+      return res.status(404).json({ msg: 'User not found' });
+    }
+
+    // Return success message and updated user
+    res.json({ msg: 'User type updated successfully', user });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Server error');
+  }
+});
+
+module.exports = router;

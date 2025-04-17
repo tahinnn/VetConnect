@@ -9,9 +9,12 @@ const Register = () => {
     name: "",
     email: "",
     password: "",
+    userType: "Pending", // Set default userType to 'Pending' or 'Not Selected'
   });
 
-  const { name, email, password } = formData;
+  const [error, setError] = useState("");  // Define setError here to handle error messages
+
+  const { name, email, password, userType } = formData;
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -24,12 +27,25 @@ const Register = () => {
       const response = await axios.post("http://localhost:5000/api/auth/register", formData);
       console.log("Registration Success:", response);
       alert("User registered successfully!");
-      navigate("/select-user-type");
+  
+      // Save the userId from the backend response in localStorage
+      const { userId } = response.data;
+      localStorage.setItem("userId", userId);  // Save userId for future use (e.g., when updating userType)
+      
+      navigate("/select-user-type");  // Redirect to UserTypeSelect page
     } catch (error) {
       console.error("Registration error:", error.response?.data || error);
-      alert("Registration failed!");
+    
+    // Capture the backend error message
+    const errorMsg = error.response?.data?.msg || "Registration failed!";
+    
+    alert(errorMsg);
+    
+    // Set the error message in the state
+    setError(errorMsg);  // Show the error message in the UI
     }
   };
+  
 
   return (
     <div style={styles.container}>

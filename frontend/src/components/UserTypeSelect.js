@@ -1,14 +1,39 @@
-import React from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
 const UserTypeSelect = () => {
   const navigate = useNavigate();
+  const [userType, setUserType] = useState(""); // Store selected userType
 
-  const handleSelection = (type) => {
-    // Save user type in localStorage or send to backend if needed
-    localStorage.setItem("userType", type);
-    alert(`You selected: ${type}`);
-    navigate("/dashboard"); // redirect to dashboard or next step
+  const handleSelection = async (type) => {
+    // Get the userId from localStorage (saved after registration)
+    const userId = localStorage.getItem("userId");
+
+    if (!userId) {
+      alert("User ID not found. Please register first.");
+      return;
+    }
+
+    try {
+      // Make PUT request to update userType in the backend
+      const response = await axios.put(`http://localhost:5000/api/auth/update-user-type/${userId}`, { userType: type });
+      console.log("User type updated:", response.data);
+
+      // Save the userType in localStorage for use later
+      localStorage.setItem("userType", type);
+
+
+      // Redirect to the appropriate dashboard
+      if (type === "Shelter") {
+        navigate("/shelter-dashboard");
+      } else {
+        navigate("/user-dashboard");
+      }
+    } catch (error) {
+      console.error("Error updating user type:", error);
+      alert("Something went wrong, please try again.");
+    }
   };
 
   return (
@@ -20,7 +45,7 @@ const UserTypeSelect = () => {
           <button style={styles.button} onClick={() => handleSelection("Shelter")}>
             I’m a Shelter
           </button>
-          <button style={styles.button} onClick={() => handleSelection("Individual")}>
+          <button style={styles.button} onClick={() => handleSelection("User")}>
             I’m an Individual
           </button>
         </div>
