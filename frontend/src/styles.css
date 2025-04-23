@@ -17,10 +17,14 @@
 }
 
 body {
-    background-color: var(--background-color);
+    background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)),
+                url('https://images.unsplash.com/photo-1450778869180-41d0601e046e?ixlib=rb-1.2.1&auto=format&fit=crop&w=1950&q=80');
+    background-size: cover;
+    background-attachment: fixed;
+    background-position: center;
     color: var(--text-color);
     line-height: 1.6;
-}
+  }
 
 /* Navbar Styles */
 .navbar {

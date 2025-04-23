@@ -12,7 +12,10 @@ import UserTypeSelect from "./components/UserTypeSelect";
 import UserDashboard from "./components/UserDashboard";
 import ShelterDashboard from "./components/ShelterDashboard";
 import AdminDashboard from './components/AdminDashboard';
+import PetList from "./components/PetList";
 import { GoogleOAuthProvider } from "@react-oauth/google";
+import Navbar from "./components/Navbar";
+
 
 // Import styles
 import './styles.css';
@@ -24,6 +27,7 @@ function App() {
   return (
     <GoogleOAuthProvider clientId={clientId}>
       <Router>
+      <Navbar />
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/register" element={<Register />} />
@@ -32,9 +36,11 @@ function App() {
           <Route path="/admin-dashboard" element={<AdminDashboard />} />
           <Route path="/user-dashboard" element={<UserDashboard />} />
           <Route path="/shelter-dashboard" element={<ShelterDashboard />} />
+          <Route path="/pets" element={<PetList />} />
         </Routes>
       </Router>
     </GoogleOAuthProvider>
+    
   );
 }
 

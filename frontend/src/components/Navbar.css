@@ -1,0 +1,14 @@
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 2rem;
+    background-color: white;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  .nav-links a {
+    margin: 0 1rem;
+    text-decoration: none;
+    color: #333;
+  }

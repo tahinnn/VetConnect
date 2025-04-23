@@ -78,6 +78,7 @@ const Home = () => {
       </nav>
 
       <main>
+      {window.location.pathname === "/" && (
         <section className="hero">
           <div className="hero-content">
             <h1>Find Your Perfect Companion</h1>
@@ -88,6 +89,7 @@ const Home = () => {
             </div>
           </div>
         </section>
+      )}
 
         {showLoginModal && (
           <div className="modal show" onClick={handleCloseModals}>

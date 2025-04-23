@@ -22,6 +22,7 @@ app.use("/api/test", testRoutes);
 const authRoutes = require("./routes/authRoutes");
 app.use("/api/auth", authRoutes);
 
+
 // MongoDB connection (using the URI from .env file)
 const dbURI = process.env.MONGODB_URI;
 
@@ -29,6 +30,11 @@ const dbURI = process.env.MONGODB_URI;
 mongoose.connect(dbURI)
   .then(() => console.log("MongoDB Atlas connected"))
   .catch((err) => console.log("MongoDB connection error:", err));
+
+const petRoutes = require('./routes/petRoutes');
+app.use('/api/pets', petRoutes);
+  
+
 
 // Basic route to check if the server is working
 app.get('/', (req, res) => {
