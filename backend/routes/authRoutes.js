@@ -145,23 +145,34 @@ router.post('/login', async (req, res) => {
 });
 
 //  Google Login route
+
 router.post('/google-login', async (req, res) => {
-  const { name, email, userType } = req.body;
+  const { name, email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({ msg: 'Email is required for Google login' });
+  }
 
   try {
     let user = await User.findOne({ email });
 
     if (!user) {
-      user = new User({ name, email, password: 'google-auth', userType });
+      user = new User({
+        name,
+        email,
+        password: 'google-auth',
+        userType: 'Pending'
+      });
       await user.save();
     }
 
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
-    res.json({ 
-      token,
-      userType: user.userType  // ✅ Return role here too
-    });
 
+    res.json({
+      token,
+      userType: user.userType,
+      userId: user._id
+    });
   } catch (error) {
     console.error(error);
     res.status(500).send("Server Error");
@@ -170,19 +181,18 @@ router.post('/google-login', async (req, res) => {
 
 //  Update userType route
 router.put('/update-user-type/:userId', async (req, res) => {
-  const { userType } = req.body;  // Get userType from the request body
-  const { userId } = req.params;  // Get userId from the request parameters
+  const { userType } = req.body;
+  const { userId } = req.params;
 
   try {
-    // Find the user by userId and update the userType
-    const user = await User.findByIdAndUpdate(userId, { userType }, { new: true });
-
-    // If user is not found, return a 404 error
+    const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ msg: 'User not found' });
     }
 
-    // Return success message and updated user
+    user.userType = userType;
+    await user.save();
+
     res.json({ msg: 'User type updated successfully', user });
   } catch (error) {
     console.error(error);

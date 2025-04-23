@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const User = require('../models/User');  // Assuming the User model is in the models folder
+const User = require('../models/User'); 
 
 // Middleware to verify if the user is an admin
 const isAdmin = (req, res, next) => {

@@ -1,3 +1,4 @@
+
 import React from "react";
 import { GoogleLogin } from "@react-oauth/google";
 import { jwtDecode } from "jwt-decode";
@@ -12,22 +13,37 @@ const GoogleButton = () => {
       const decoded = jwtDecode(credentialResponse.credential);
       const { name, email } = decoded;
 
+      console.log("Google user:", { name, email });
+
       const response = await axios.post("http://localhost:5000/api/auth/google-login", {
         name,
         email,
       });
 
-      // Temporarily assign role; later this can come from backend
-      const userType = "Individual";
+      const { token, userType, userId } = response.data;
+
+      if (!userId || !token || !userType) {
+        alert("Something went wrong during Google login.");
+        return;
+      }
+
+      localStorage.setItem("token", token);
       localStorage.setItem("userType", userType);
+      localStorage.setItem("userId", userId);
 
-      localStorage.setItem("token", response.data.token);
-      alert("Google Login successful!");
+      console.log("Stored userId:", userId);
+      console.log("UserType:", userType);
 
-      // Redirect based on role
-      navigate(userType === "Shelter" ? "/shelter-dashboard" : "/user-dashboard");
+      if (userType === "Pending") {
+        setTimeout(() => {
+          navigate("/select-user-type");
+        }, 50);
+      } else {
+        window.location.href = "/";
+      }
+
     } catch (err) {
-      console.error("Google login error:", err);
+      console.error("Google login error:", err.response?.data || err.message || err);
       alert("Google login failed");
     }
   };

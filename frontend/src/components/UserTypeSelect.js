@@ -5,9 +5,10 @@ import axios from "axios";
 const UserTypeSelect = () => {
   const navigate = useNavigate();
   const [userType, setUserType] = useState(""); // Store selected userType
+  
+  console.log("From localStorage (userId):", localStorage.getItem("userId"));
 
   const handleSelection = async (type) => {
-    // Get the userId from localStorage (saved after registration)
     const userId = localStorage.getItem("userId");
 
     if (!userId) {
@@ -16,23 +17,19 @@ const UserTypeSelect = () => {
     }
 
     try {
-      // Make PUT request to update userType in the backend
-      const response = await axios.put(`http://localhost:5000/api/auth/update-user-type/${userId}`, { userType: type });
+      const response = await axios.put(`http://localhost:5000/api/auth/update-user-type/${userId}`, {
+      userType: type
+      });
       console.log("User type updated:", response.data);
 
-      // Save the userType in localStorage for use later
+      // ✅ Update localStorage with selected role
       localStorage.setItem("userType", type);
 
-
-      // Redirect to the appropriate dashboard
-      if (type === "Shelter") {
-        navigate("/shelter-dashboard");
-      } else {
-        navigate("/user-dashboard");
-      }
+      alert("User type updated successfully!");
+      navigate("/");
     } catch (error) {
-      console.error("Error updating user type:", error);
-      alert("Something went wrong, please try again.");
+      console.error("Error updating user type:", error.response?.data || error.message);
+      alert("Something went wrong while updating your role.");
     }
   };
 

@@ -9,12 +9,12 @@ const Register = () => {
     name: "",
     email: "",
     password: "",
-    userType: "Pending", // Set default userType to 'Pending' or 'Not Selected'
+    userType: "Pending",
   });
 
-  const [error, setError] = useState("");  // Define setError here to handle error messages
+  const [error, setError] = useState("");
 
-  const { name, email, password, userType } = formData;
+  const { name, email, password } = formData;
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -25,115 +25,54 @@ const Register = () => {
     e.preventDefault();
     try {
       const response = await axios.post("http://localhost:5000/api/auth/register", formData);
-      console.log("Registration Success:", response);
       alert("User registered successfully!");
-  
-      // Save the userId from the backend response in localStorage
+
       const { userId } = response.data;
-      localStorage.setItem("userId", userId);  // Save userId for future use (e.g., when updating userType)
-      
-      navigate("/select-user-type");  // Redirect to UserTypeSelect page
+      localStorage.setItem("userId", userId);
+      navigate("/select-user-type");
     } catch (error) {
-      console.error("Registration error:", error.response?.data || error);
-    
-    // Capture the backend error message
-    const errorMsg = error.response?.data?.msg || "Registration failed!";
-    
-    alert(errorMsg);
-    
-    // Set the error message in the state
-    setError(errorMsg);  // Show the error message in the UI
+      const errorMsg = error.response?.data?.msg || "Registration failed!";
+      alert(errorMsg);
+      setError(errorMsg);
     }
   };
-  
 
   return (
-    <div style={styles.container}>
-      <div style={styles.card}>
-        <h2 style={styles.title}>Register to VetConnect</h2>
-        <form onSubmit={handleSubmit} style={styles.form}>
-          <input
-            type="text"
-            name="name"
-            value={name}
-            onChange={handleChange}
-            placeholder="Name"
-            required
-            style={styles.input}
-          />
-          <input
-            type="email"
-            name="email"
-            value={email}
-            onChange={handleChange}
-            placeholder="Email"
-            required
-            style={styles.input}
-          />
-          <input
-            type="password"
-            name="password"
-            value={password}
-            onChange={handleChange}
-            placeholder="Password"
-            required
-            style={styles.input}
-          />
-          <button type="submit" style={styles.button}>Register</button>
-        </form>
-        <div style={styles.separator}>or</div>
-        <GoogleButton />
-      </div>
+    <div>
+      <form onSubmit={handleSubmit} className="modal-form">
+        <input
+          type="text"
+          name="name"
+          value={name}
+          onChange={handleChange}
+          placeholder="Full Name"
+          required
+          className="modal-input"
+        />
+        <input
+          type="email"
+          name="email"
+          value={email}
+          onChange={handleChange}
+          placeholder="Email"
+          required
+          className="modal-input"
+        />
+        <input
+          type="password"
+          name="password"
+          value={password}
+          onChange={handleChange}
+          placeholder="Password"
+          required
+          className="modal-input"
+        />
+        <button type="submit" className="modal-button">Register</button>
+      </form>
+      <div className="divider">or</div>
+      <GoogleButton />
     </div>
   );
-};
-
-const styles = {
-  container: {
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    height: "100vh",
-    backgroundColor: "#eaeaea",
-  },
-  card: {
-    width: "350px",
-    padding: "30px",
-    backgroundColor: "#fff",
-    borderRadius: "10px",
-    boxShadow: "0 0 10px rgba(0,0,0,0.1)",
-    textAlign: "center",
-  },
-  title: {
-    marginBottom: "20px",
-    color: "#333",
-  },
-  form: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "15px",
-  },
-  input: {
-    padding: "10px",
-    border: "1px solid #ccc",
-    borderRadius: "5px",
-    fontSize: "16px",
-  },
-  button: {
-    padding: "10px",
-    backgroundColor: "#2196f3",
-    color: "#fff",
-    fontWeight: "bold",
-    border: "none",
-    borderRadius: "5px",
-    cursor: "pointer",
-  },
-  separator: {
-    margin: "20px 0",
-    fontSize: "14px",
-    color: "#aaa",
-    textAlign: "center",
-  },
 };
 
 export default Register;

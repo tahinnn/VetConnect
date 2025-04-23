@@ -1,10 +1,8 @@
 import React, { useState } from "react";
 import axios from "axios";
 import GoogleButton from "./GoogleButton";
-import { useNavigate } from "react-router-dom";
 
 const Login = () => {
-  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -21,115 +19,46 @@ const Login = () => {
     e.preventDefault();
     try {
       const response = await axios.post("http://localhost:5000/api/auth/login", formData);
-      
-      // Store token and userType in localStorage
       localStorage.setItem("token", response.data.token);
-      localStorage.setItem("userType", response.data.userType); 
-  
+      localStorage.setItem("userType", response.data.userType);
       alert("Login successful!");
-  
-      // Get the userType from localStorage
-      const userType = localStorage.getItem("userType");
-  
-      // Redirect based on userType
-      if (userType === "Admin") {
-        // Redirect to Admin Dashboard if the user is an admin
-        navigate("/admin-dashboard");
-      } else if (userType === "Shelter") {
-        // Redirect to Shelter Dashboard if the user is a shelter
-        navigate("/shelter-dashboard");
-      } else {
-        // Redirect to User Dashboard if the user is an individual user
-        navigate("/user-dashboard");
-      }
+      window.location.href = "/";
     } catch (error) {
       if (error.response?.status === 403) {
         alert("Password not set. Please sign in with Google.");
       } else {
         alert("Login failed. Please check your credentials.");
       }
-      console.error("Login error:", error);
     }
   };
-  
 
   return (
-    <div style={styles.container}>
-      <div style={styles.card}>
-        <h2 style={styles.title}>Login to VetConnect</h2>
-        <form onSubmit={handleSubmit} style={styles.form}>
-          <input
-            type="email"
-            name="email"
-            value={email}
-            onChange={handleChange}
-            placeholder="Email"
-            required
-            style={styles.input}
-          />
-          <input
-            type="password"
-            name="password"
-            value={password}
-            onChange={handleChange}
-            placeholder="Password"
-            required
-            style={styles.input}
-          />
-          <button type="submit" style={styles.button}>Login</button>
-        </form>
-        <div style={styles.separator}>or</div>
-        <GoogleButton />
-      </div>
+    <div>
+      <form onSubmit={handleSubmit} className="modal-form">
+        <input
+          type="email"
+          name="email"
+          value={email}
+          onChange={handleChange}
+          placeholder="Email"
+          required
+          className="modal-input"
+        />
+        <input
+          type="password"
+          name="password"
+          value={password}
+          onChange={handleChange}
+          placeholder="Password"
+          required
+          className="modal-input"
+        />
+        <button type="submit" className="modal-button">Login</button>
+      </form>
+      <div className="divider">or</div>
+      <GoogleButton />
     </div>
   );
-};
-
-const styles = {
-  container: {
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    height: "100vh",
-    backgroundColor: "#f2f2f2",
-  },
-  card: {
-    width: "350px",
-    padding: "30px",
-    backgroundColor: "#fff",
-    borderRadius: "10px",
-    boxShadow: "0 0 10px rgba(0,0,0,0.1)",
-    textAlign: "center",
-  },
-  title: {
-    marginBottom: "20px",
-    color: "#333",
-  },
-  form: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "15px",
-  },
-  input: {
-    padding: "10px",
-    border: "1px solid #ccc",
-    borderRadius: "5px",
-    fontSize: "16px",
-  },
-  button: {
-    padding: "10px",
-    backgroundColor: "#4caf50",
-    color: "#fff",
-    fontWeight: "bold",
-    border: "none",
-    borderRadius: "5px",
-    cursor: "pointer",
-  },
-  separator: {
-    margin: "20px 0",
-    fontSize: "14px",
-    color: "#aaa",
-  },
 };
 
 export default Login;
