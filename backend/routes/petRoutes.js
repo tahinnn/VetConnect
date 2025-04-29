@@ -1,6 +1,21 @@
 const express = require("express");
 const router = express.Router();
 const Pet = require("../models/Pet");
+const multer = require("multer");
+const path = require("path");
+
+// Multer config
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, "uploads/");
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1E9);
+    cb(null, uniqueSuffix + path.extname(file.originalname));
+  },
+});
+
+const upload = multer({ storage: storage });
 
 // GET all pets
 router.get("/", async (req, res) => {
@@ -13,28 +28,43 @@ router.get("/", async (req, res) => {
   }
 });
 
-module.exports = router;
+// POST new pet ad
+router.post("/", upload.single("image"), async (req, res) => {
+  try {
+    const {
+      name,
+      type,
+      breed,
+      age,
+      gender,
+      location,
+      amount,
+      phone,
+      owner,
+    } = req.body;
 
-
-
-
-router.get("/sample", async (req, res) => {
-    const samplePet = {
-      name: "Luna",
-      image: "https://placekitten.com/300/300",
-      age: 3,
-      breed: "Golden Retriever",
-      vaccinated: true,
+    const newPet = new Pet({
+      name,
+      image: req.file ? `/uploads/${req.file.filename}` : "", // ✅ use uploaded image
+      type,
+      age,
+      breed,
+      gender,
+      location,
+      amount,
+      phone,
+      vaccinated: false,
       status: "Available",
-      owner: "6630f95f4f5b8c37e0d54e91" // Use a valid User ID from your MongoDB
-    };
-  
-    try {
-      const pet = await Pet.create(samplePet);
-      res.status(201).json(pet);
-    } catch (err) {
-      console.error("Sample Pet Error:", err);
-      res.status(500).json({ message: "Failed to create sample pet" });
-    }
-  });
-  
+      isApproved: false,
+      owner,
+    });
+
+    await newPet.save();
+    res.status(201).json({ message: "Pet Ad Created", pet: newPet });
+  } catch (error) {
+    console.error("Pet upload error:", error);
+    res.status(500).json({ message: "Error creating pet ad" });
+  }
+});
+
+module.exports = router;

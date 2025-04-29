@@ -1,12 +1,9 @@
-import React, { useState } from "react";
+import React from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
 const UserTypeSelect = () => {
   const navigate = useNavigate();
-  const [userType, setUserType] = useState(""); // Store selected userType
-  
-  console.log("From localStorage (userId):", localStorage.getItem("userId"));
 
   const handleSelection = async (type) => {
     const userId = localStorage.getItem("userId");
@@ -17,16 +14,17 @@ const UserTypeSelect = () => {
     }
 
     try {
-      const response = await axios.put(`http://localhost:5000/api/auth/update-user-type/${userId}`, {
-      userType: type
-      });
-      console.log("User type updated:", response.data);
+      await axios.put(`http://localhost:5000/api/auth/update-user-type/${userId}`, { userType: type });
 
-      // ✅ Update localStorage with selected role
+      // ✅ Update userType in localStorage
       localStorage.setItem("userType", type);
 
-      alert("User type updated successfully!");
+      alert(`Welcome! You've been registered as ${type}.`);
+      
+      // ✅ Navigate to Home
       navigate("/");
+      window.location.reload(); // Refresh to load Navbar correctly
+
     } catch (error) {
       console.error("Error updating user type:", error.response?.data || error.message);
       alert("Something went wrong while updating your role.");

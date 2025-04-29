@@ -12,8 +12,6 @@ const Register = () => {
     userType: "Pending",
   });
 
-  const [error, setError] = useState("");
-
   const { name, email, password } = formData;
 
   const handleChange = (e) => {
@@ -24,16 +22,40 @@ const Register = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      // First, register user
       const response = await axios.post("http://localhost:5000/api/auth/register", formData);
-      alert("User registered successfully!");
 
       const { userId } = response.data;
+      if (!userId) {
+        alert("Registration failed, please try again.");
+        return;
+      }
+
+      // ✅ Set userId temporarily to localStorage
       localStorage.setItem("userId", userId);
+
+      // ✅ Automatically login after registration
+      const loginResponse = await axios.post("http://localhost:5000/api/auth/login", {
+        email,
+        password
+      });
+
+      const { token, userType } = loginResponse.data;
+      if (!token) {
+        alert("Auto-login failed, please login manually.");
+        navigate("/login");
+        return;
+      }
+
+      localStorage.setItem("token", token);
+      localStorage.setItem("userType", userType);
+
+      // ✅ Redirect to User Type Selection
       navigate("/select-user-type");
+
     } catch (error) {
-      const errorMsg = error.response?.data?.msg || "Registration failed!";
-      alert(errorMsg);
-      setError(errorMsg);
+      console.error(error.response?.data || error.message);
+      alert(error.response?.data?.msg || "Registration/Login failed!");
     }
   };
 

@@ -1,47 +1,53 @@
-// Import required modules
-const express = require('express');  // Web framework for Node.js
-const mongoose = require('mongoose');  // MongoDB ODM for Node.js
-require('dotenv').config();  // For loading environment variables
+// Import modules
+const express = require('express');
+const mongoose = require('mongoose');
+const cors = require('cors');
+require('dotenv').config(); // ✅ Only once
 
-const dotenv = require("dotenv");
-
-// Create an Express app
+// Create Express app
 const app = express();
 
-// Enable CORS for all origins or specify a particular origin
-const cors = require('cors');
-app.use(cors());  // This allows all origins, you can restrict it to a specific domain if needed
+// For storing files and requires path
+const path = require("path");
 
-// Middleware to parse JSON requests
+// Middleware
+app.use(cors());
 app.use(express.json());
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-// Import routes after initializing app
-const testRoutes = require("./routes/testRoutes");
-app.use("/api/test", testRoutes);
-
-const authRoutes = require("./routes/authRoutes");
-app.use("/api/auth", authRoutes);
-
-
-// MongoDB connection (using the URI from .env file)
-const dbURI = process.env.MONGODB_URI;
-
-// Connect to MongoDB using Mongoose
-mongoose.connect(dbURI)
-  .then(() => console.log("MongoDB Atlas connected"))
-  .catch((err) => console.log("MongoDB connection error:", err));
-
+// Import routes
+const testRoutes = require('./routes/testRoutes');
+const authRoutes = require('./routes/authRoutes');
 const petRoutes = require('./routes/petRoutes');
+
+// API Routes
+app.use('/api/test', testRoutes);
+app.use('/api/auth', authRoutes);
 app.use('/api/pets', petRoutes);
-  
 
+// Connect to MongoDB
+const dbURI = process.env.MONGODB_URI;
+mongoose.connect(dbURI)
+  .then(() => console.log('MongoDB connected'))
+  .catch((err) => console.error('MongoDB connection error:', err));
 
-// Basic route to check if the server is working
+// Default route
 app.get('/', (req, res) => {
   res.send('VetConnect API is working!');
 });
 
-// Set the port the server will listen to
+// 404 Error Handler for unknown APIs
+app.use((req, res, next) => {
+  res.status(404).json({ message: "API Not Found" });
+});
+
+// Central Error Handler
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ message: "Something broke!" });
+});
+
+// Start the server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

@@ -1,84 +1,39 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
 import Login from './Login';
 import Register from './Register';
 
 const Home = () => {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showSignupModal, setShowSignupModal] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const navigate = useNavigate();
 
   useEffect(() => {
-    const checkAuth = () => {
-      const token = localStorage.getItem("token");
-      setIsLoggedIn(!!token);
+    const handleOpenLogin = () => {
+      setShowLoginModal(true);
+      setShowSignupModal(false);
     };
 
-    checkAuth();
-    window.addEventListener("storage", checkAuth);
-    return () => window.removeEventListener("storage", checkAuth);
+    const handleOpenSignup = () => {
+      setShowSignupModal(true);
+      setShowLoginModal(false);
+    };
+
+    window.addEventListener('openLoginModal', handleOpenLogin);
+    window.addEventListener('openSignupModal', handleOpenSignup);
+
+    return () => {
+      window.removeEventListener('openLoginModal', handleOpenLogin);
+      window.removeEventListener('openSignupModal', handleOpenSignup);
+    };
   }, []);
-
-  const handleLoginClick = () => {
-    setShowLoginModal(true);
-    setShowSignupModal(false);
-  };
-
-  const handleSignupClick = () => {
-    setShowSignupModal(true);
-    setShowLoginModal(false);
-  };
 
   const handleCloseModals = () => {
     setShowLoginModal(false);
     setShowSignupModal(false);
   };
 
-  const handleDashboardRedirect = () => {
-    const userType = localStorage.getItem("userType");
-    if (!userType) return alert("Please log in to access your dashboard.");
-    navigate(`/${userType.toLowerCase()}-dashboard`);
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("userType");
-    alert("Logged out successfully!");
-    navigate("/");
-    setIsLoggedIn(false);
-  };
-
   return (
     <div>
-      <nav className="navbar">
-        <div className="nav-brand">
-          <i className="fas fa-paw"></i>
-          <span>VetConnect</span>
-        </div>
-        <div className="nav-links">
-          <Link to="/" className="active">Home</Link>
-          <Link to="/pets">Pets</Link>
-          <Link to="/shelters">Shelters</Link>
-          <Link to="/about">About</Link>
-          {isLoggedIn && (
-            <button className="btn-dashboard" onClick={handleDashboardRedirect}>Dashboard</button>
-          )}
-        </div>
-        <div className="auth-buttons">
-          {!isLoggedIn ? (
-            <>
-              <button className="btn-login" onClick={handleLoginClick}>Login</button>
-              <button className="btn-signup" onClick={handleSignupClick}>Sign Up</button>
-            </>
-          ) : (
-            <button className="btn-logout" onClick={handleLogout}>Log Out</button>
-          )}
-        </div>
-      </nav>
-
       <main>
-      {window.location.pathname === "/" && (
         <section className="hero">
           <div className="hero-content">
             <h1>Find Your Perfect Companion</h1>
@@ -89,7 +44,6 @@ const Home = () => {
             </div>
           </div>
         </section>
-      )}
 
         {showLoginModal && (
           <div className="modal show" onClick={handleCloseModals}>

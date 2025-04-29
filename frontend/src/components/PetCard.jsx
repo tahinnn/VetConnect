@@ -6,15 +6,16 @@ const PetCard = ({ pet }) => {
     <div className="pet-card">
       {/* Using the image URL from the backend */}
       <img 
-        src={pet.image} 
+        src={`http://localhost:5000${pet.image}`}
         alt={pet.name} 
         className="pet-image" 
       />
       <div className="pet-details">
         <h3 className="pet-name">{pet.name.toUpperCase()}</h3> {/* Pet name in uppercase */}
+        <p><strong>Pet Type:</strong> {pet.type}</p> {/* Display Pet Type */}
         <p><strong>Breed:</strong> {pet.breed}</p> {/* Display breed */}
-        <p>{pet.age} Years Old</p>
-        <p>Status: {pet.status}</p>
+        <p><strong>Age:</strong> {pet.age} Years</p>
+        <p><strong>Status:</strong>  {pet.status}</p>
         <p><strong>Location:</strong> {pet.location}</p>
         <p><strong>Amount:</strong> Tk {pet.amount?.toLocaleString()}</p> {/* Amount displayed as currency */}
 

@@ -21,6 +21,7 @@ const Login = () => {
       const response = await axios.post("http://localhost:5000/api/auth/login", formData);
       localStorage.setItem("token", response.data.token);
       localStorage.setItem("userType", response.data.userType);
+      localStorage.setItem("userId", response.data.userId);
       alert("Login successful!");
       window.location.href = "/";
     } catch (error) {
