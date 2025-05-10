@@ -10,7 +10,7 @@ This will show you any modified, added, or deleted files that have not been stag
 ## 2.Stage the Changes:
 To stage the files that you want to commit, use:
 ```bash
-git add .
+git add . < file >
 ```
 
 ## 3.Commit the Changes:
