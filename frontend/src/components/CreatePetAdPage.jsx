@@ -1,7 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import "./CreatePetAdPage.css"; // Reuse the custom CSS file
+import "./CreatePetAdPage.css";
 
 const CreatePetAdPage = () => {
   const navigate = useNavigate();
@@ -66,7 +66,11 @@ const CreatePetAdPage = () => {
   return (
     <div className="pet-ad-container">
       <div className="form-wrapper">
-        <h2 className="form-title">Create Pet Ad</h2>
+        <h2 className="form-title">
+          <span className="paw-icon left">🐾</span>
+          Create Pet Ad
+          <span className="paw-icon right">🐾</span>
+        </h2>
   
         <form onSubmit={handleSubmit} className="pet-ad-form">
           <div className="form-group">
@@ -75,11 +79,16 @@ const CreatePetAdPage = () => {
           </div>
   
           <div className="form-group">
-            <label>Pet Type</label>
+            <label>
+              <span className="paw-icon">🐾</span>
+              Pet Type
+            </label>
             <select name="type" value={formData.type} onChange={handleChange} required>
               <option value="">Select Pet Type</option>
               <option value="Dog">Dog</option>
               <option value="Cat">Cat</option>
+              <option value="Bird">Bird</option>
+              <option value="Rabbit">Rabbit</option>
             </select>
           </div>
   

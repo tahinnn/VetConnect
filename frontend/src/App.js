@@ -19,6 +19,8 @@ import Navbar from "./components/Navbar";
 import ProfileRouter from "./components/ProfileRouter"; 
 import AppointmentForm from './components/AppointmentForm';
 import AppointmentSlip from './components/AppointmentSlip';
+import EmergencyVet from './components/EmergencyVet';
+import ChatBot from './components/ChatBot';
 // Profile-specific pages (used in ProfileRouter internally)
 import UserProfilePage from "./components/UserProfilePage";     
 import ShelterProfilePage from "./components/ShelterProfilePage"; 
@@ -60,7 +62,8 @@ function AppContent() {
   };
 
   const hideNavbar = location.pathname.includes('/medical-appointment/') || 
-                    location.pathname === '/book-appointment';
+                    location.pathname === '/book-appointment' ||
+                    location.pathname === '/emergency-vet';
 
   return (
     <div>
@@ -77,7 +80,10 @@ function AppContent() {
         <Route path="/profile" element={<ProfileRouter />} />
         <Route path="/book-appointment" element={<AppointmentForm />} />
         <Route path="/medical-appointment/:id" element={<AppointmentSlip />} />
+        <Route path="/emergency-vet" element={<EmergencyVet />} />
       </Routes>
+
+      <ChatBot />
 
       {showLoginModal && (
         <div className="modal show" onClick={handleCloseModals}>
