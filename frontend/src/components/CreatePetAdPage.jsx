@@ -55,10 +55,10 @@ const CreatePetAdPage = () => {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-      alert("Pet Ad created successfully!");
+      alert("Pet listing created successfully!");
       navigate("/pets"); // ✅ Redirect back to listing
     } catch (err) {
-      console.error("Create Pet Ad error:", err);
+      console.error("Sell Pet error:", err);
       alert("Something went wrong while submitting the form.");
     }
   };
@@ -68,10 +68,8 @@ const CreatePetAdPage = () => {
       <div className="form-wrapper">
         <h2 className="form-title">
           <span className="paw-icon left">🐾</span>
-          Create Pet Ad
-          <span className="paw-icon right">🐾</span>
+          <b>Sell your Pet!!</b>
         </h2>
-  
         <form onSubmit={handleSubmit} className="pet-ad-form">
           <div className="form-group">
             <label>Pet Name</label>
@@ -79,10 +77,7 @@ const CreatePetAdPage = () => {
           </div>
   
           <div className="form-group">
-            <label>
-              <span className="paw-icon">🐾</span>
-              Pet Type
-            </label>
+            <label>Pet Type</label>
             <select name="type" value={formData.type} onChange={handleChange} required>
               <option value="">Select Pet Type</option>
               <option value="Dog">Dog</option>
@@ -94,12 +89,7 @@ const CreatePetAdPage = () => {
   
           <div className="form-group">
             <label>Breed</label>
-            <select name="breed" value={formData.breed} onChange={handleChange} required>
-              <option value="">Select Breed</option>
-              <option value="Labrador">Labrador</option>
-              <option value="Poodle">Poodle</option>
-              <option value="Persian">Persian</option>
-            </select>
+            <input type="text" name="breed" value={formData.breed} onChange={handleChange} required />
           </div>
   
           <div className="form-group">
