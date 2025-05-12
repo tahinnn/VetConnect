@@ -78,24 +78,41 @@ const ShelterBookingForm = () => {
     try {
       // Get shelter details
       const shelterData = shelters.find(s => s.id === parseInt(shelterId));
+      if (!shelterData) {
+        throw new Error('Shelter not found');
+      }
       
       // Prepare booking data
       const bookingData = {
-        ...formData,
-        shelterId,
+        userName: formData.userName || 'Guest User',
+        petName: formData.petName,
+        breed: formData.breed,
+        isVaccinated: formData.isVaccinated,
+        days: parseInt(formData.days),
+        shelterId: shelterId.toString(),
         shelterName: shelterData.name,
         shelterLocation: shelterData.location,
         shelterImage: shelterData.image,
-        totalCharge,
+        totalCharge: parseInt(totalCharge),
         petImage: petImage
       };
+
+      // Validate required fields
+      const requiredFields = ['petName', 'breed', 'isVaccinated', 'days'];
+      const missingFields = requiredFields.filter(field => !bookingData[field]);
+      
+      if (missingFields.length > 0) {
+        alert(`Please fill in all required fields: ${missingFields.join(', ')}`);
+        return;
+      }
 
       // Navigate to payment page with booking data
       navigate('/shelter-payment', { 
         state: { bookingData }
       });
     } catch (error) {
-      alert('Error creating booking. Please try again.');
+      alert('Error processing booking: ' + error.message);
+      console.error('Booking error:', error);
     }
   };
 

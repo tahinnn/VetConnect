@@ -12,6 +12,9 @@ const ShelterPayment = () => {
   const [cardNumber, setCardNumber] = useState('');
   const [expiryDate, setExpiryDate] = useState('');
   const [cvv, setCvv] = useState('');
+  const [transactionId, setTransactionId] = useState('');
+  const [transactionError, setTransactionError] = useState('');
+  const [transactionDetails, setTransactionDetails] = useState(null);
 
   useEffect(() => {
     if (!location.state?.bookingData) {
@@ -24,25 +27,72 @@ const ShelterPayment = () => {
     setBookingData(data);
   }, [location.state, navigate]);
 
-  const handlePaymentSubmit = async (e) => {
-    e.preventDefault();
-    setPaymentStep('processing');
+  const validateTransactionId = (id) => {
+    const isValid = /^\d{10}$/.test(id); // Checks if exactly 10 digits
+    setTransactionError(isValid ? '' : 'Transaction ID must be exactly 10 digits');
+    return isValid;
+  };
 
+  const handleTransactionIdChange = (e) => {
+    const value = e.target.value.replace(/\D/g, ''); // Only allow digits
+    if (value.length <= 10) {
+      setTransactionId(value);
+      if (value.length === 10) {
+        validateTransactionId(value);
+      } else {
+        setTransactionError('');
+      }
+    }
+  };
+
+  const createBooking = async (bookingData) => {
     try {
-      // Simulate payment processing
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
-      // Create booking in database
       const formData = new FormData();
-      Object.keys(bookingData).forEach(key => {
-        if (key === 'petImage' && bookingData[key]) {
-          formData.append('petImage', bookingData[key]);
-        } else {
-          formData.append(key, bookingData[key]);
-        }
+      
+      // Calculate payments
+      const advancePayment = Math.floor(bookingData.totalCharge * 0.5);
+      const duePayment = Math.ceil(bookingData.totalCharge * 0.5);
+
+      // Get userId from localStorage
+      const userId = localStorage.getItem('userId');
+      if (!userId) {
+        throw new Error('User not logged in');
+      }
+
+      // Prepare booking data
+      const processedData = {
+        userId: userId,
+        userName: bookingData.userName || 'Guest User',
+        petName: bookingData.petName,
+        breed: bookingData.breed,
+        isVaccinated: bookingData.isVaccinated || 'No', // Convert to required field
+        days: bookingData.days,
+        shelterId: bookingData.shelterId,
+        shelterName: bookingData.shelterName,
+        shelterLocation: bookingData.shelterLocation,
+        shelterImage: bookingData.shelterImage,
+        totalCharge: bookingData.totalCharge,
+        advancePayment,
+        duePayment,
+        paymentMethod,
+        transactionId
+      };
+
+      // Convert processedData to JSON strings for each field
+      Object.keys(processedData).forEach(key => {
+        formData.append(key, JSON.stringify(processedData[key]));
       });
-      formData.append('paymentMethod', paymentMethod);
-      formData.append('transactionId', 'TXN' + Date.now());
+
+      // Append payment-specific fields directly (not as JSON)
+      formData.set('paymentMethod', paymentMethod);
+      formData.set('transactionId', transactionId);
+
+      // Append pet image if exists
+      if (bookingData.petImage instanceof File) {
+        formData.append('petImage', bookingData.petImage);
+      }
+
+      console.log('Sending booking data:', processedData); // Debug log
 
       const response = await fetch('http://localhost:5000/api/shelter-bookings', {
         method: 'POST',
@@ -50,50 +100,159 @@ const ShelterPayment = () => {
       });
 
       const result = await response.json();
+      console.log('Server response:', result); // Debug log
+      
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || 'Booking creation failed');
+      }
+
+      return result;
+    } catch (error) {
+      console.error('Error creating booking:', error);
+      throw error;
+    }
+  };
+
+  const handlePaymentSubmit = async (e) => {
+    e.preventDefault();
+    
+    // For mobile payments, validate transaction ID
+    if (['bkash', 'nagad', 'rocket'].includes(paymentMethod)) {
+      if (!validateTransactionId(transactionId)) {
+        return;
+      }
+    }
+
+    // For card payments, validate card details
+    if (paymentMethod === 'card') {
+      if (!cardNumber || !expiryDate || !cvv) {
+        alert('Please fill in all card details');
+        return;
+      }
+    }
+
+    setPaymentStep('processing');
+
+    try {
+      // Create the booking in the database
+      const result = await createBooking(bookingData);
+
       if (result.success) {
-        setBookingData(result.booking);
         setPaymentStep('complete');
+        setTransactionDetails({
+          id: transactionId || result.booking.transactionId,
+          date: new Date().toLocaleString(),
+          amount: bookingData.totalCharge,
+          method: paymentMethod
+        });
       } else {
-        throw new Error(result.message);
+        throw new Error(result.message || 'Payment failed');
       }
     } catch (error) {
-      alert('Payment failed. Please try again.');
-      setPaymentStep('payment');
+      console.error('Payment error:', error);
+      alert(error.message || 'Payment failed. Please try again.');
+      setPaymentStep('form');
     }
   };
 
   const generatePDF = () => {
     const doc = new jsPDF();
-    const pageWidth = doc.internal.pageSize.getWidth();
-    
-    // Add header
-    doc.setFillColor(33, 150, 243);
+    const pageWidth = doc.internal.pageSize.width;
+    const pageHeight = doc.internal.pageSize.height;
+    const margin = 20;
+    let y = 20;
+
+    // Add header background
+    doc.setFillColor(33, 150, 243); // Blue background
     doc.rect(0, 0, pageWidth, 40, 'F');
+
+    // Add logo text in header
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(24);
-    doc.text('Booking Confirmation', pageWidth/2, 25, { align: 'center' });
+    doc.setFont(undefined, 'bold');
+    doc.text('VetConnect', pageWidth / 2, 25, { align: 'center' });
 
-    // Reset text color
-    doc.setTextColor(0, 0, 0);
+    // Add subtitle
     doc.setFontSize(12);
+    doc.text('Your Trusted Pet Care Partner', pageWidth / 2, 35, { align: 'center' });
 
-    // Add content
-    let y = 50;
+    // Reset text color and move y position
+    doc.setTextColor(0, 0, 0);
+    y = 50;
+
+    // Add decorative element
+    doc.setDrawColor(33, 150, 243);
+    doc.setLineWidth(0.5);
+    doc.line(margin, y, pageWidth - margin, y);
+    y += 10;
+
+    // Payment Invoice title
+    doc.setFontSize(20);
+    doc.setTextColor(33, 150, 243);
+    doc.text('Payment Invoice', pageWidth / 2, y, { align: 'center' });
+    y += 20;
+
+    // Helper function to add lines with alternating backgrounds
+    let isEven = false;
     const addLine = (label, value) => {
-      doc.text(`${label}: ${value}`, 20, y);
-      y += 10;
+      if (isEven) {
+        doc.setFillColor(240, 247, 255);
+        doc.rect(margin - 5, y - 5, pageWidth - 2 * (margin - 5), 12, 'F');
+      }
+      doc.setTextColor(80, 80, 80);
+      doc.setFontSize(11);
+      doc.setFont(undefined, 'bold');
+      doc.text(label + ':', margin, y);
+      doc.setFont(undefined, 'normal');
+      doc.setTextColor(0, 0, 0);
+      doc.text(value, 100, y);
+      y += 12;
+      isEven = !isEven;
     };
 
-    addLine('Booking ID', bookingData._id);
-    addLine('Shelter', bookingData.shelterName);
-    addLine('Location', bookingData.shelterLocation);
+    // Add booking details
+    doc.setTextColor(0, 0, 0);
+    addLine('Booking ID', transactionDetails?._id || '');
+    addLine('Transaction ID', transactionId);
+    addLine('Date', new Date().toLocaleDateString());
     addLine('Pet Name', bookingData.petName);
     addLine('Breed', bookingData.breed);
-    addLine('Days', bookingData.days);
+    addLine('Shelter Name', bookingData.shelterName);
+    addLine('Duration', `${bookingData.days} days`);
     addLine('Total Charge', `৳${bookingData.totalCharge}`);
-    addLine('Advance Paid', `৳${bookingData.advancePayment}`);
+    addLine('Advance Payment', `৳${bookingData.advancePayment}`);
     addLine('Due Amount', `৳${bookingData.duePayment}`);
-    addLine('Payment Status', 'Advance Payment Complete');
+    addLine('Payment Method', paymentMethod.toUpperCase());
+
+    // Add pet safety mottos in a box
+    y += 10;
+    doc.setFillColor(76, 175, 80, 0.1); // Light green background
+    doc.rect(margin - 5, y, pageWidth - 2 * (margin - 5), 50, 'F');
+    
+    doc.setTextColor(76, 175, 80);
+    doc.setFontSize(14);
+    doc.setFont(undefined, 'bold');
+    doc.text('Pet Safety Tips:', margin, y + 15);
+    
+    doc.setTextColor(102, 102, 102);
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'normal');
+    doc.text('🐾 A safe pet is a happy pet - ensure regular vaccinations', margin + 5, y + 25);
+    doc.text('🏠 Provide a comfortable and secure shelter environment', margin + 5, y + 35);
+    doc.text('💕 Show your pet love and care every day', margin + 5, y + 45);
+
+    // Add footer with gradient
+    const footerY = pageHeight - 20;
+    doc.setFillColor(33, 150, 243, 0.1);
+    doc.rect(0, footerY - 10, pageWidth, 20, 'F');
+
+    doc.setTextColor(33, 150, 243);
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'bold');
+    doc.text('Thank you for choosing VetConnect!', pageWidth / 2, footerY, { align: 'center' });
+
+    // Save the PDF
+    doc.save(`VetConnect_Payment_Invoice_${transactionId}.pdf`);
     addLine('Transaction ID', bookingData.transactionId);
     addLine('Booking Date', new Date(bookingData.bookingDate).toLocaleDateString());
 
@@ -244,9 +403,15 @@ const ShelterPayment = () => {
                   <div className="form-group">
                     <input
                       type="text"
-                      placeholder="Enter Transaction ID"
+                      placeholder="Enter 10-digit Transaction ID"
+                      value={transactionId}
+                      onChange={handleTransactionIdChange}
+                      maxLength="10"
                       required
                     />
+                    {transactionError && (
+                      <div className="error-message">{transactionError}</div>
+                    )}
                   </div>
                 </div>
               )}
@@ -271,16 +436,61 @@ const ShelterPayment = () => {
           <div className="payment-complete">
             <div className="success-animation">✓</div>
             <h2>Payment Successful!</h2>
-            <div className="confirmation-details">
-              <p>Booking ID: {bookingData._id}</p>
-              <p>Transaction ID: {bookingData.transactionId}</p>
-              <p>Amount Paid: ৳{bookingData.advancePayment}</p>
-              <p>Due Amount: ৳{bookingData.duePayment}</p>
+            <div className="payment-slip">
+              <h3>Payment Slip</h3>
+              <div className="slip-details">
+                <div className="detail-row">
+                  <span>Booking ID:</span>
+                  <span>{transactionDetails?._id}</span>
+                </div>
+                <div className="detail-row">
+                  <span>Transaction ID:</span>
+                  <span>{transactionId}</span>
+                </div>
+                <div className="detail-row">
+                  <span>Pet Name:</span>
+                  <span>{bookingData.petName}</span>
+                </div>
+                <div className="detail-row">
+                  <span>Breed:</span>
+                  <span>{bookingData.breed}</span>
+                </div>
+                <div className="detail-row">
+                  <span>Shelter Name:</span>
+                  <span>{bookingData.shelterName}</span>
+                </div>
+                <div className="detail-row">
+                  <span>Duration:</span>
+                  <span>{bookingData.days} days</span>
+                </div>
+                <div className="detail-row">
+                  <span>Total Charge:</span>
+                  <span>৳{bookingData.totalCharge}</span>
+                </div>
+                <div className="detail-row">
+                  <span>Advance Payment:</span>
+                  <span>৳{bookingData.advancePayment}</span>
+                </div>
+                <div className="detail-row">
+                  <span>Due Amount:</span>
+                  <span>৳{bookingData.duePayment}</span>
+                </div>
+                <div className="detail-row">
+                  <span>Payment Method:</span>
+                  <span>{paymentMethod.toUpperCase()}</span>
+                </div>
+              </div>
             </div>
-            <button onClick={generatePDF} className="download-button">
-              Download Booking Slip
-              <span>📄</span>
-            </button>
+            <div className="action-buttons">
+              <button onClick={generatePDF} className="download-button">
+                Download Payment Invoice
+                <span>📄</span>
+              </button>
+              <button onClick={() => navigate('/')} className="home-button">
+                Back to Home
+                <span>🏠</span>
+              </button>
+            </div>
           </div>
         )}
       </div>

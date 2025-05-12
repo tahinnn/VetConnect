@@ -19,18 +19,61 @@ const upload = multer({ storage: storage });
 // Create new booking
 router.post('/', upload.single('petImage'), async (req, res) => {
   try {
+    // Parse stringified JSON fields
+    const parsedBody = {};
+    Object.keys(req.body).forEach(key => {
+      try {
+        parsedBody[key] = JSON.parse(req.body[key]);
+      } catch {
+        parsedBody[key] = req.body[key];
+      }
+    });
+
+    console.log('Received booking data:', parsedBody); // Debug log
+
     const bookingData = {
-      ...req.body,
+      userId: parsedBody.userId,
+      userName: parsedBody.userName,
+      petName: parsedBody.petName,
+      breed: parsedBody.breed,
+      isVaccinated: parsedBody.isVaccinated || 'No',
+      days: parseInt(parsedBody.days),
+      shelterId: parsedBody.shelterId?.toString(),
+      shelterName: parsedBody.shelterName,
+      shelterLocation: parsedBody.shelterLocation,
+      shelterImage: parsedBody.shelterImage,
       petImage: req.file ? `/uploads/shelter-pets/${req.file.filename}` : undefined,
-      days: parseInt(req.body.days),
-      totalCharge: parseInt(req.body.totalCharge),
-      advancePayment: parseInt(req.body.advancePayment),
-      duePayment: parseInt(req.body.duePayment),
-      paymentStatus: 'advance_paid'
+      totalCharge: parseInt(parsedBody.totalCharge),
+      advancePayment: parseInt(parsedBody.advancePayment),
+      duePayment: parseInt(parsedBody.duePayment),
+      paymentMethod: req.body.paymentMethod,
+      paymentStatus: 'advance_paid',
+      transactionId: req.body.transactionId
     };
+
+    // Convert all fields to strings or numbers as needed
+    if (typeof bookingData.isVaccinated === 'boolean') {
+      bookingData.isVaccinated = bookingData.isVaccinated ? 'Yes' : 'No';
+    }
+
+    console.log('Processed booking data:', bookingData); // Debug log
+
+    // Validate required fields
+    const requiredFields = [
+      'userId', 'userName', 'petName', 'breed', 'isVaccinated', 'days',
+      'shelterId', 'shelterName', 'shelterLocation', 'totalCharge',
+      'advancePayment', 'duePayment', 'paymentMethod', 'transactionId'
+    ];
+
+    const missingFields = requiredFields.filter(field => !bookingData[field]);
+    if (missingFields.length > 0) {
+      throw new Error(`Missing required fields: ${missingFields.join(', ')}`);
+    }
 
     const booking = new ShelterBooking(bookingData);
     await booking.save();
+
+    console.log('Booking saved successfully:', booking); // Debug log
 
     res.json({
       success: true,
@@ -40,7 +83,7 @@ router.post('/', upload.single('petImage'), async (req, res) => {
     console.error('Shelter booking error:', error);
     res.status(500).json({
       success: false,
-      message: 'Error creating shelter booking'
+      message: error.message || 'Error creating shelter booking'
     });
   }
 });

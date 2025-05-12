@@ -9,41 +9,77 @@ const Register = () => {
     name: "",
     email: "",
     password: "",
-    userType: "Pending",
+    userType: "user", // Default to regular user
   });
 
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
   const { name, email, password } = formData;
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
+    setError(""); // Clear error when user types
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError("");
+    setLoading(true);
+
     try {
-      const response = await axios.post("http://localhost:5000/api/auth/register", formData);
-      alert("User registered successfully!");
+      const response = await axios.post(
+        `${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/auth/register`,
+        formData
+      );
 
-      const { userId } = response.data;
+      const { token, userType, userId, name: userName, email: userEmail } = response.data;
 
-      // ✅ Save relevant info safely
+      // Store user data
+      localStorage.setItem("token", token);
+      localStorage.setItem("userType", userType);
       localStorage.setItem("userId", userId);
-      localStorage.setItem("userName", name);
-      localStorage.setItem("email", email);
+      localStorage.setItem("userName", userName);
+      localStorage.setItem("email", userEmail);
 
-      navigate("/select-user-type");
+      // Configure axios defaults
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+
+      // Close any open modals
+      window.dispatchEvent(new CustomEvent('closeModals'));
+
+      // Navigate based on user type
+      if (userType === "Pending") {
+        navigate("/select-user-type");
+      } else {
+        switch(userType) {
+          case 'admin':
+            navigate("/admin-dashboard");
+            break;
+          case 'shelter':
+            navigate("/shelter-dashboard");
+            break;
+          default:
+            navigate("/user-dashboard");
+        }
+      }
     } catch (error) {
-      const errorMsg = error.response?.data?.msg || "Registration failed!";
-      alert(errorMsg);
+      console.error('Registration error:', error);
+      const errorMsg = error.response?.data?.msg || "Registration failed. Please try again.";
       setError(errorMsg);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <div>
       <form onSubmit={handleSubmit} className="modal-form">
+        {error && (
+          <div className="error-message" style={{ color: 'red', marginBottom: '10px' }}>
+            {error}
+          </div>
+        )}
         <input
           type="text"
           name="name"
@@ -52,6 +88,7 @@ const Register = () => {
           placeholder="Full Name"
           required
           className="modal-input"
+          disabled={loading}
         />
         <input
           type="email"
@@ -61,20 +98,29 @@ const Register = () => {
           placeholder="Email"
           required
           className="modal-input"
+          disabled={loading}
         />
         <input
           type="password"
           name="password"
           value={password}
           onChange={handleChange}
-          placeholder="Password"
+          placeholder="Password (min. 6 characters)"
           required
+          minLength={6}
           className="modal-input"
+          disabled={loading}
         />
-        <button type="submit" className="modal-button">Register</button>
+        <button 
+          type="submit" 
+          className="modal-button"
+          disabled={loading}
+        >
+          {loading ? 'Registering...' : 'Register'}
+        </button>
       </form>
       <div className="divider">or</div>
-      <GoogleButton />
+      <GoogleButton disabled={loading} />
     </div>
   );
 };

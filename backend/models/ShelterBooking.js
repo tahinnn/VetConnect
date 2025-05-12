@@ -15,7 +15,6 @@ const shelterBookingSchema = new mongoose.Schema({
   },
   isVaccinated: {
     type: String,
-    enum: ['yes', 'no'],
     required: true
   },
   days: {
@@ -24,11 +23,8 @@ const shelterBookingSchema = new mongoose.Schema({
     min: 1,
     max: 30
   },
-  petImage: {
-    type: String  // URL to the stored image
-  },
   shelterId: {
-    type: Number,
+    type: String,
     required: true
   },
   shelterName: {
@@ -38,6 +34,9 @@ const shelterBookingSchema = new mongoose.Schema({
   shelterLocation: {
     type: String,
     required: true
+  },
+  shelterImage: {
+    type: String
   },
   totalCharge: {
     type: Number,
@@ -51,15 +50,21 @@ const shelterBookingSchema = new mongoose.Schema({
     type: Number,
     required: true
   },
+  paymentMethod: {
+    type: String,
+    required: true,
+    enum: ['bkash', 'nagad', 'rocket', 'card']
+  },
   paymentStatus: {
     type: String,
     enum: ['pending', 'advance_paid', 'fully_paid'],
     default: 'pending'
   },
   transactionId: {
-    type: String
+    type: String,
+    required: true
   },
-  bookingDate: {
+  createdAt: {
     type: Date,
     default: Date.now
   },

@@ -9,50 +9,80 @@ const Login = () => {
     email: "",
     password: "",
   });
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const { email, password } = formData;
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
+    setError(""); // Clear error when user types
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError("");
+    setLoading(true);
+
     try {
-      const response = await axios.post("http://localhost:5000/api/auth/login", formData);
+      const response = await axios.post(
+        `${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/auth/login`,
+        formData
+      );
 
-      const { token, userType, userId } = response.data;
+      const { token, userType, userId, name: userName, email: userEmail } = response.data;
 
-      // Optional: you may want to fetch profile here to get userName/email
-      const profileRes = await axios.get(`http://localhost:5000/api/auth/profile/${userId}`);
-      const { name, email: profileEmail } = profileRes.data;
-
+      // Store user data
       localStorage.setItem("token", token);
       localStorage.setItem("userType", userType);
       localStorage.setItem("userId", userId);
-      localStorage.setItem("userName", name);
-      localStorage.setItem("email", profileEmail);
+      localStorage.setItem("userName", userName);
+      localStorage.setItem("email", userEmail);
 
-      alert("Login successful!");
-      
+      // Configure axios defaults for future requests
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+
       // Close the modal
       window.dispatchEvent(new CustomEvent('closeModals'));
       
-      // Navigate to profile page
-      navigate("/profile");
-    } catch (error) {
-      if (error.response?.status === 403) {
-        alert("Password not set. Please sign in with Google.");
-      } else {
-        alert("Login failed. Please check your credentials.");
+      // Navigate based on user type
+      switch(userType) {
+        case 'admin':
+          navigate("/admin-dashboard");
+          break;
+        case 'shelter':
+          navigate("/shelter-dashboard");
+          break;
+        default:
+          navigate("/user-dashboard");
       }
+    } catch (error) {
+      console.error('Login error:', error);
+      if (error.response?.data?.msg) {
+        setError(error.response.data.msg);
+      } else if (error.response?.status === 403) {
+        setError("Your account is suspended. Please contact support.");
+      } else if (error.response?.status === 401) {
+        setError("Invalid email or password");
+      } else if (!error.response) {
+        setError("Network error. Please check your connection.");
+      } else {
+        setError("An error occurred. Please try again.");
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <div>
       <form onSubmit={handleSubmit} className="modal-form">
+        {error && (
+          <div className="error-message" style={{ color: 'red', marginBottom: '10px' }}>
+            {error}
+          </div>
+        )}
         <input
           type="email"
           name="email"
@@ -61,6 +91,7 @@ const Login = () => {
           placeholder="Email"
           required
           className="modal-input"
+          disabled={loading}
         />
         <input
           type="password"
@@ -70,11 +101,18 @@ const Login = () => {
           placeholder="Password"
           required
           className="modal-input"
+          disabled={loading}
         />
-        <button type="submit" className="modal-button">Login</button>
+        <button 
+          type="submit" 
+          className="modal-button"
+          disabled={loading}
+        >
+          {loading ? 'Logging in...' : 'Login'}
+        </button>
       </form>
       <div className="divider">or</div>
-      <GoogleButton />
+      <GoogleButton disabled={loading} />
     </div>
   );
 };
