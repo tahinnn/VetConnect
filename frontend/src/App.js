@@ -3,7 +3,8 @@ import {
   BrowserRouter as Router,
   Routes,
   Route,
-  useLocation
+  useLocation,
+  Navigate
 } from "react-router-dom";
 // Importing components
 import Home from "./components/Home";
@@ -15,6 +16,9 @@ import ShelterDashboard from "./components/ShelterDashboard";
 import AdminDashboard from "./components/AdminDashboard";
 import PetList from "./components/PetList";
 import CreatePetAdPage from "./components/CreatePetAdPage";
+import ShelterList from "./components/ShelterList";
+import ShelterBookingForm from "./components/ShelterBookingForm";
+import ShelterPayment from "./components/ShelterPayment";
 import Navbar from "./components/Navbar";
 import ProfileRouter from "./components/ProfileRouter"; 
 import AppointmentForm from './components/AppointmentForm';
@@ -77,6 +81,9 @@ function AppContent() {
         <Route path="/admin-dashboard" element={<AdminDashboard />} />
         <Route path="/pets" element={<PetList />} />
         <Route path="/create-ad" element={<CreatePetAdPage />} />
+        <Route path="/shelters" element={<ShelterList />} />
+        <Route path="/shelter-booking/:shelterId" element={<ShelterBookingForm />} />
+        <Route path="/shelter-payment" element={<ShelterPayment />} />
         <Route path="/profile" element={<ProfileRouter />} />
         <Route path="/book-appointment" element={<AppointmentForm />} />
         <Route path="/medical-appointment/:id" element={<AppointmentSlip />} />
