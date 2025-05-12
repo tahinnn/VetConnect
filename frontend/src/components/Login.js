@@ -19,9 +19,19 @@ const Login = () => {
     e.preventDefault();
     try {
       const response = await axios.post("http://localhost:5000/api/auth/login", formData);
-      localStorage.setItem("token", response.data.token);
-      localStorage.setItem("userType", response.data.userType);
-      localStorage.setItem("userId", response.data.userId);
+
+      const { token, userType, userId } = response.data;
+
+      // Optional: you may want to fetch profile here to get userName/email
+      const profileRes = await axios.get(`http://localhost:5000/api/auth/profile/${userId}`);
+      const { name, email: profileEmail } = profileRes.data;
+
+      localStorage.setItem("token", token);
+      localStorage.setItem("userType", userType);
+      localStorage.setItem("userId", userId);
+      localStorage.setItem("userName", name);
+      localStorage.setItem("email", profileEmail);
+
       alert("Login successful!");
       window.location.href = "/";
     } catch (error) {

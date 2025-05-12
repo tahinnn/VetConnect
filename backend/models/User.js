@@ -22,6 +22,17 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false,  // Default value for banned status
   },
+
+  shelterName: { 
+    type: String 
+  },
+  shelterLocation: { 
+    type: String 
+  },
+  petTypes: { 
+    type: String 
+  }, // e.g., "Dogs", "Cats", "Both"
+
 });
 
 module.exports = mongoose.model('User', userSchema);

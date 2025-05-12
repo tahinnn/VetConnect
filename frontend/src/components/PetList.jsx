@@ -7,9 +7,14 @@ const PetList = () => {
   const [pets, setPets] = useState([]);
 
   useEffect(() => {
-    axios.get("http://localhost:5000/api/pets")
-      .then((response) => setPets(response.data))
-      .catch((error) => console.error("Error fetching pets:", error));
+    const userId = localStorage.getItem("userId");
+
+    axios
+      .get("http://localhost:5000/api/pets", {
+        params: { userId },
+      })
+      .then((res) => setPets(res.data))
+      .catch((err) => console.error("Error fetching pets:", err));
   }, []);
 
   return (

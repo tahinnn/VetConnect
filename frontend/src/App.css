@@ -1,5 +1,9 @@
+/* Main app container */
 .App {
   text-align: center;
+  padding-top: 70px; /* Same as navbar height */
+  min-height: 100vh;
+  box-sizing: border-box;
 }
 
 .App-logo {

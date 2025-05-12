@@ -19,11 +19,16 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 const testRoutes = require('./routes/testRoutes');
 const authRoutes = require('./routes/authRoutes');
 const petRoutes = require('./routes/petRoutes');
+const appointmentRoutes = require('./routes/appointmentRoutes');
+const shelterRoutes = require('./routes/shelterRoutes');
 
 // API Routes
 app.use('/api/test', testRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/pets', petRoutes);
+app.use('/api', appointmentRoutes);
+app.use("/api/shelters", shelterRoutes);
+
 
 // Connect to MongoDB
 const dbURI = process.env.MONGODB_URI;

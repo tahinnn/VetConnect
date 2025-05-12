@@ -1,0 +1,80 @@
+
+.right-section {
+  background-color: #f9f9f9;
+  padding: 20px;
+  border-radius: 8px;
+  width: 300px;
+  height: fit-content;
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.05);
+}
+
+
+.pet-detail-page {
+  background-color: white;
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
+  max-width: 1200px;
+  margin: 120px auto 40px auto;
+  display: flex;
+  gap: 30px;
+}
+.left-section {
+  flex: 2;
+}
+
+.right-section {
+  background-color: #f9f9f9;
+  padding: 20px;
+  border-radius: 8px;
+  width: 300px;
+  height: fit-content;
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.05);
+}
+
+
+.pet-title {
+  font-size: 28px;
+  font-weight: bold;
+  margin-bottom: 20px;
+}
+
+.pet-main-img {
+  width: 100%;
+  max-height: 400px;
+  object-fit: cover;
+  border-radius: 10px;
+  margin-bottom: 20px;
+}
+
+.pet-info p {
+  font-size: 16px;
+  margin-bottom: 10px;
+}
+
+.price {
+  font-size: 24px;
+  font-weight: bold;
+  color: #1e40af;
+  margin-bottom: 10px;
+}
+
+.chat-btn, .adopt-btn {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  margin-top: 10px;
+  font-size: 16px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.chat-btn {
+  background-color: #6366f1;
+  color: white;
+}
+
+.adopt-btn {
+  background-color: #16a34a;
+  color: white;
+}

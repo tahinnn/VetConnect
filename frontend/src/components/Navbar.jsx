@@ -49,12 +49,24 @@ const Navbar = () => {
 
   const handleCreateAdClick = () => {
     const token = localStorage.getItem("token");
+    const userType = localStorage.getItem("userType");
+    const shelterName = localStorage.getItem("shelterName");
+    const shelterLocation = localStorage.getItem("shelterLocation");
+    const petTypes = localStorage.getItem("petTypes");
+  
     if (!token) {
-      alert("Please log in first.");
+      alert("Please Log In First");
       return;
     }
+  
+    if (userType === "Shelter" && (!shelterName || !shelterLocation || !petTypes)) {
+      alert("Please complete your profile before creating an ad.");
+      return;
+    }
+  
     navigate("/create-ad");
   };
+  
 
   return (
     <nav className="navbar">
@@ -76,7 +88,7 @@ const Navbar = () => {
           <div className="dropdown-content">
             <Link to="/pet-walking">Pet Walking</Link>
             <div className="nested-dropdown">
-              <span>Medical Service</span>
+              <span className="nested-btn">Medical Service</span>
               <div className="nested-dropdown-content">
                 <Link to="/book-appointment">Book Appointment</Link>
                 <Link to="/emergency-vet">Emergency Vet Service</Link>

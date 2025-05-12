@@ -1,4 +1,3 @@
-
 import React from "react";
 import { GoogleLogin } from "@react-oauth/google";
 import { jwtDecode } from "jwt-decode";
@@ -11,12 +10,12 @@ const GoogleButton = () => {
   const handleGoogleSuccess = async (credentialResponse) => {
     try {
       const decoded = jwtDecode(credentialResponse.credential);
-      const { name, email } = decoded;
+      const { name: userName, email } = decoded;
 
-      console.log("Google user:", { name, email });
+      console.log("Google user:", { userName, email });
 
       const response = await axios.post("http://localhost:5000/api/auth/google-login", {
-        name,
+        name: userName,
         email,
       });
 
@@ -30,6 +29,8 @@ const GoogleButton = () => {
       localStorage.setItem("token", token);
       localStorage.setItem("userType", userType);
       localStorage.setItem("userId", userId);
+      localStorage.setItem("userName", userName);
+      localStorage.setItem("email", email);
 
       console.log("Stored userId:", userId);
       console.log("UserType:", userType);

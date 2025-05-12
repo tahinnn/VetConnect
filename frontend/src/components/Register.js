@@ -12,6 +12,7 @@ const Register = () => {
     userType: "Pending",
   });
 
+  const [error, setError] = useState("");
   const { name, email, password } = formData;
 
   const handleChange = (e) => {
@@ -22,42 +23,34 @@ const Register = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      // First, register user
-      const response = await axios.post("http://localhost:5000/api/auth/register", formData);
+      // Register the user
+      await axios.post("http://localhost:5000/api/auth/register", formData);
+      alert("User registered successfully!");
+      
 
-      const { userId } = response.data;
-      if (!userId) {
-        alert("Registration failed, please try again.");
-        return;
-      }
-
-      // ✅ Set userId temporarily to localStorage
-      localStorage.setItem("userId", userId);
-
-      // ✅ Automatically login after registration
-      const loginResponse = await axios.post("http://localhost:5000/api/auth/login", {
-        email,
-        password
+      // Now login the user
+      const loginRes = await axios.post("http://localhost:5000/api/auth/login", {
+        email: formData.email,
+        password: formData.password
       });
 
-      const { token, userType } = loginResponse.data;
-      if (!token) {
-        alert("Auto-login failed, please login manually.");
-        navigate("/login");
-        return;
-      }
+      const { token, userId, name, email } = loginRes.data;
 
       localStorage.setItem("token", token);
-      localStorage.setItem("userType", userType);
+      localStorage.setItem("userId", userId);
+      localStorage.setItem("userName", name);
+      localStorage.setItem("email", email);
 
-      // ✅ Redirect to User Type Selection
+      // Redirect to the user type selection page
       navigate("/select-user-type");
 
     } catch (error) {
-      console.error(error.response?.data || error.message);
-      alert(error.response?.data?.msg || "Registration/Login failed!");
+      const errorMsg = error.response?.data?.msg || "Registration or login failed!";
+      alert(errorMsg);
+      setError(errorMsg);
     }
   };
+
 
   return (
     <div>

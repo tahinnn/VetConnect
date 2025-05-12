@@ -3,28 +3,45 @@ import {
   BrowserRouter as Router,
   Routes,
   Route,
-  useNavigate
+  useLocation
 } from "react-router-dom";
-
+// Importing components
 import Home from "./components/Home";
 import Register from "./components/Register";
 import Login from "./components/Login";
 import UserTypeSelect from "./components/UserTypeSelect";
+
 import UserDashboard from "./components/UserDashboard";
 import ShelterDashboard from "./components/ShelterDashboard";
-import AdminDashboard from './components/AdminDashboard';
+import AdminDashboard from "./components/AdminDashboard";
+
 import PetList from "./components/PetList";
-import { GoogleOAuthProvider } from "@react-oauth/google";
-import Navbar from "./components/Navbar";
 import CreatePetAdPage from "./components/CreatePetAdPage";
 
-// Import styles
-import './styles.css';
+import ShelterList from "./components/ShelterList";
+import ShelterBookingForm from "./components/ShelterBookingForm";
+import ShelterPayment from "./components/ShelterPayment";
+import Navbar from "./components/Navbar";
+import ProfileRouter from "./components/ProfileRouter"; 
+import AppointmentForm from './components/AppointmentForm';
+import AppointmentSlip from './components/AppointmentSlip';
+import EmergencyVet from './components/EmergencyVet';
+import ChatBot from './components/ChatBot';
+
+// Profile-specific pages (used in ProfileRouter internally)
+import UserProfilePage from "./components/UserProfilePage";     
+import ShelterProfilePage from "./components/ShelterProfilePage";
+import AdminProfilePage from "./components/AdminProfilePage";
+import PetDetailPage from "./pages/PetDetailPage";
+
 import './App.css';
+import './styles.css';
+import { GoogleOAuthProvider } from "@react-oauth/google";
 
 const clientId = "230127747685-97hkrk2841dsf2l0fvo9gb3tnmj44let.apps.googleusercontent.com";
 
-function App() {
+function AppContent() {
+  const location = useLocation();
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showSignupModal, setShowSignupModal] = useState(false);
 
@@ -38,7 +55,7 @@ function App() {
       setShowSignupModal(true);
       setShowLoginModal(false);
     };
-
+    
     window.addEventListener('openLoginModal', handleOpenLogin);
     window.addEventListener('openSignupModal', handleOpenSignup);
 
@@ -53,42 +70,63 @@ function App() {
     setShowSignupModal(false);
   };
 
+  const hideNavbar = location.pathname.includes('/medical-appointment/') || 
+                    location.pathname === '/book-appointment' ||
+                    location.pathname === '/emergency-vet';
+
+  return (
+    <div>
+      {!hideNavbar && <Navbar />}
+      
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/select-user-type" element={<UserTypeSelect />} />
+        <Route path="/user-dashboard" element={<UserDashboard />} />
+        <Route path="/shelter-dashboard" element={<ShelterDashboard />} />
+        <Route path="/admin-dashboard" element={<AdminDashboard />} />
+        <Route path="/admin/profile" element={<AdminProfilePage />} />
+        <Route path="/pets" element={<PetList />} />
+        <Route path="/create-ad" element={<CreatePetAdPage />} />
+        <Route path="/shelters" element={<ShelterList />} />
+        <Route path="/shelter-booking/:shelterId" element={<ShelterBookingForm />} />
+        <Route path="/shelter-payment" element={<ShelterPayment />} />
+        <Route path="/profile" element={<ProfileRouter />} />
+        <Route path="/book-appointment" element={<AppointmentForm />} />
+        <Route path="/medical-appointment/:id" element={<AppointmentSlip />} />
+        <Route path="/emergency-vet" element={<EmergencyVet />} />
+        <Route path="/pets/:petId" element={<PetDetailPage />} />
+      </Routes>
+
+      <ChatBot />
+
+      {showLoginModal && (
+        <div className="modal show" onClick={handleCloseModals}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <span className="close" onClick={handleCloseModals}>&times;</span>
+            <h2>Login</h2>
+            <Login />
+          </div>
+        </div>
+      )}
+
+      {showSignupModal && (
+        <div className="modal show" onClick={handleCloseModals}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <span className="close" onClick={handleCloseModals}>&times;</span>
+            <h2>Sign Up</h2>
+            <Register />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function App() {
   return (
     <GoogleOAuthProvider clientId={clientId}>
       <Router>
-        <Navbar />
-        
-        {showLoginModal && (
-          <div className="modal show" onClick={handleCloseModals}>
-            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-              <span className="close" onClick={handleCloseModals}>&times;</span>
-              <h2>Login</h2>
-              <Login />
-            </div>
-          </div>
-        )}
-
-        {showSignupModal && (
-          <div className="modal show" onClick={handleCloseModals}>
-            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-              <span className="close" onClick={handleCloseModals}>&times;</span>
-              <h2>Sign Up</h2>
-              <Register />
-            </div>
-          </div>
-        )}
-
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/select-user-type" element={<UserTypeSelect />} />
-          <Route path="/admin-dashboard" element={<AdminDashboard />} />
-          <Route path="/user-dashboard" element={<UserDashboard />} />
-          <Route path="/shelter-dashboard" element={<ShelterDashboard />} />
-          <Route path="/pets" element={<PetList />} />
-          <Route path="/create-ad" element={<CreatePetAdPage />} />
-        </Routes>
+        <AppContent />
       </Router>
     </GoogleOAuthProvider>
   );

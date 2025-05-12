@@ -1,7 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import "./CreatePetAdPage.css"; // Reuse the custom CSS file
+
+
+
 
 const CreatePetAdPage = () => {
   const navigate = useNavigate();
@@ -14,8 +17,38 @@ const CreatePetAdPage = () => {
     location: "",
     amount: "",
     phone: "",
+    description: "",
   });
   const [imageFile, setImageFile] = useState(null);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      const userId = localStorage.getItem("userId");
+      const userType = localStorage.getItem("userType");
+
+      if (userType === "Shelter") {
+        try {
+          const res = await axios.get(`http://localhost:5000/api/auth/profile/${userId}`);
+          const { shelterName, shelterLocation, petTypes } = res.data;
+
+          const isIncomplete =
+            !shelterName?.trim() || !shelterLocation?.trim() || !petTypes?.trim();
+
+          if (isIncomplete) {
+            alert("Please complete your profile before creating an ad.");
+            navigate("/profile");
+          }
+        } catch (err) {
+          console.error("Shelter profile fetch error:", err);
+          alert("Error verifying shelter profile.");
+        }
+      }
+    };
+
+    fetchProfile();
+  }, []);
+
+
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -124,6 +157,18 @@ const CreatePetAdPage = () => {
           <div className="form-group">
             <label>Phone Number</label>
             <input type="number" name="phone" value={formData.phone} onChange={handleChange} required />
+          </div>
+
+          <div className="form-group">
+            <label>Description</label>
+            <textarea
+              name="description"
+              maxLength={5000}
+              rows={4}
+              value={formData.description}
+              onChange={handleChange}
+              required
+            />
           </div>
   
           <div className="form-group">
