@@ -17,12 +17,12 @@ const userSchema = new mongoose.Schema({
   },
   password: {
     type: String,
-    required: false // Allow null for Google login
+    required: true
   },
   userType: {
     type: String,
-    enum: ['user', 'admin', 'shelter', 'pending'],
-    default: 'user'
+    required: true,
+    enum: ["user", "shelter", "admin"]
   },
   authType: {
     type: String,
@@ -65,7 +65,23 @@ const userSchema = new mongoose.Schema({
   createdAt: {
     type: Date,
     default: Date.now
-  }
+  },
+  lastActive: {
+    type: Date,
+    default: Date.now
+  },
+  banReason: {
+    type: String,
+    default: ""
+  },
+  activityLog: [{
+    action: String,
+    timestamp: {
+      type: Date,
+      default: Date.now
+    },
+    details: mongoose.Schema.Types.Mixed
+  }]
 });
 
 // Hash password before saving for local auth

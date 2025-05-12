@@ -25,6 +25,7 @@ import AppointmentForm from './components/AppointmentForm';
 import AppointmentSlip from './components/AppointmentSlip';
 import EmergencyVet from './components/EmergencyVet';
 import ChatBot from './components/ChatBot';
+import Forum from './components/Forum';
 // Profile-specific pages (used in ProfileRouter internally)
 import UserProfilePage from "./components/UserProfilePage";     
 import ShelterProfilePage from "./components/ShelterProfilePage"; 
@@ -67,7 +68,9 @@ function AppContent() {
 
   const hideNavbar = location.pathname.includes('/medical-appointment/') || 
                     location.pathname === '/book-appointment' ||
-                    location.pathname === '/emergency-vet';
+                    location.pathname === '/emergency-vet' ||
+                    location.pathname === '/admin-dashboard' ||
+                    location.pathname === '/forum';
 
   return (
     <div>
@@ -88,6 +91,7 @@ function AppContent() {
         <Route path="/book-appointment" element={<AppointmentForm />} />
         <Route path="/medical-appointment/:id" element={<AppointmentSlip />} />
         <Route path="/emergency-vet" element={<EmergencyVet />} />
+        <Route path="/forum" element={<Forum />} />
       </Routes>
 
       <ChatBot />

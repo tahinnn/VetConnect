@@ -40,13 +40,19 @@ const testRoutes = require('./routes/testRoutes');
 const authRoutes = require('./routes/authRoutes');
 const petRoutes = require('./routes/petRoutes');
 const appointmentRoutes = require('./routes/appointmentRoutes');
+const reviewRoutes = require('./routes/reviewRoutes');
 
 // Use routes
 app.use('/api/shelter-bookings', shelterBookingRoutes);
 app.use('/api/test', testRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/pets', petRoutes);
-app.use('/api', appointmentRoutes);
+
+// Reviews routes should be before the catch-all appointment routes
+app.use('/api/reviews', reviewRoutes);
+
+// This should be last as it's a catch-all route
+app.use('/api/appointments', appointmentRoutes);
 
 // Connect to MongoDB
 const dbURI = process.env.MONGODB_URI;
@@ -81,3 +87,4 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+console.log('Review routes mounted');

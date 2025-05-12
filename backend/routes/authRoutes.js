@@ -3,7 +3,9 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const isAdmin = require('../middleware/authMiddleware');
 const User = require('../models/User');
-const Pet = require('../models/Pet'); // ✅ Added missing Pet import
+const Pet = require('../models/Pet');
+const Appointment = require('../models/Appointment');
+const ShelterBooking = require('../models/ShelterBooking');
 const router = express.Router();
 
 // Email validation function
@@ -73,13 +75,30 @@ router.put("/update-shelter-profile/:userId", async (req, res) => {
 
 // --------------- Admin Routes ---------------
 
-// Get all users (Admin only)
+// Get all users with their activities (Admin only)
 router.get('/admin/users', isAdmin, async (req, res) => {
   try {
-    const users = await User.find({});
-    res.json(users);
+    const users = await User.find({}).select('-password');
+    const appointments = await Appointment.find({}).populate('userId', 'name email');
+    const shelterBookings = await ShelterBooking.find({}).populate('userId', 'name email');
+
+    // Enhance user data with their activities
+    const enhancedUsers = users.map(user => {
+      const userAppointments = appointments.filter(app => app.userId?._id.toString() === user._id.toString());
+      const userBookings = shelterBookings.filter(book => book.userId.toString() === user._id.toString());
+
+      return {
+        ...user.toObject(),
+        appointments: userAppointments,
+        shelterBookings: userBookings,
+        activityCount: userAppointments.length + userBookings.length
+      };
+    });
+
+    res.json(enhancedUsers);
   } catch (error) {
-    res.status(500).send('Server error');
+    console.error('Admin users fetch error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
 
@@ -100,13 +119,69 @@ router.put('/admin/make-admin/:userId', isAdmin, async (req, res) => {
   }
 });
 
-// Ban a user
-router.put('/admin/ban-user/:userId', isAdmin, async (req, res) => {
+// Ban or unban a user
+router.put('/admin/toggle-ban/:userId', isAdmin, async (req, res) => {
   try {
-    const user = await User.findByIdAndUpdate(req.params.userId, { isBanned: true }, { new: true });
-    res.json({ msg: 'User banned successfully', user });
+    const user = await User.findById(req.params.userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Toggle ban status
+    user.isBanned = !user.isBanned;
+    await user.save();
+
+    // Cancel all pending appointments and bookings if user is banned
+    if (user.isBanned) {
+      await Appointment.updateMany(
+        { userId: user._id, status: 'pending' },
+        { status: 'cancelled', cancellationReason: 'User account banned' }
+      );
+
+      await ShelterBooking.updateMany(
+        { userId: user._id, status: 'pending' },
+        { status: 'cancelled', cancellationReason: 'User account banned' }
+      );
+    }
+
+    res.json({ 
+      message: user.isBanned ? 'User banned successfully' : 'User unbanned successfully',
+      user
+    });
   } catch (error) {
-    res.status(500).send('Server error');
+    console.error('Ban toggle error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// Get user activity details
+router.get('/admin/user-activity/:userId', isAdmin, async (req, res) => {
+  try {
+    const user = await User.findById(req.params.userId).select('-password -googleId');
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const [appointments, bookings] = await Promise.all([
+      Appointment.find({ userId: user._id })
+        .sort('-createdAt')
+        .limit(10),
+      ShelterBooking.find({ userId: user._id })
+        .sort('-createdAt')
+        .limit(10)
+    ]);
+
+    res.json({
+      user: user.toJSON(),
+      activity: {
+        appointments,
+        bookings,
+        log: user.activityLog
+      }
+    });
+  } catch (error) {
+    console.error('User activity fetch error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
 
