@@ -26,6 +26,7 @@ import AppointmentSlip from './components/AppointmentSlip';
 import EmergencyVet from './components/EmergencyVet';
 import ChatBot from './components/ChatBot';
 import Forum from './components/Forum';
+import FAQ from './components/FAQ';
 // Profile-specific pages (used in ProfileRouter internally)
 import UserProfilePage from "./components/UserProfilePage";     
 import ShelterProfilePage from "./components/ShelterProfilePage"; 
@@ -70,7 +71,8 @@ function AppContent() {
                     location.pathname === '/book-appointment' ||
                     location.pathname === '/emergency-vet' ||
                     location.pathname === '/admin-dashboard' ||
-                    location.pathname === '/forum';
+                    location.pathname === '/forum' ||
+                    location.pathname === '/faq';
 
   return (
     <div>
@@ -92,6 +94,7 @@ function AppContent() {
         <Route path="/medical-appointment/:id" element={<AppointmentSlip />} />
         <Route path="/emergency-vet" element={<EmergencyVet />} />
         <Route path="/forum" element={<Forum />} />
+        <Route path="/faq" element={<FAQ />} />
       </Routes>
 
       <ChatBot />

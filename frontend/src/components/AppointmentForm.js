@@ -57,12 +57,19 @@ const AppointmentForm = () => {
 
     if (validateForm()) {
       try {
-        const response = await axios.post('http://localhost:5000/api/appointments', formData);
+        // Create a copy of formData and format the date
+        const formattedData = {
+          ...formData,
+          appointmentDate: formData.appointmentDate.toISOString()
+        };
+
+        const response = await axios.post('http://localhost:5000/api/appointments', formattedData);
         setSuccessMessage('Appointment booked successfully!');
         setAppointmentId(response.data.data._id);
         navigate(`/medical-appointment/${response.data.data._id}`);
       } catch (error) {
-        setErrorMessage(error.response?.data?.error || 'Failed to book appointment. Please try again.');
+        console.error('Error details:', error.response?.data);
+        setErrorMessage(error.response?.data?.message || 'Failed to book appointment. Please try again.');
       } finally {
         setIsSubmitting(false);
       }
