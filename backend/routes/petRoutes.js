@@ -1,6 +1,8 @@
 const express = require("express");
 const router = express.Router();
 const Pet = require("../models/Pet");
+const User = require("../models/User");
+const isAdmin = require('../middleware/authMiddleware');
 const multer = require("multer");
 const path = require("path");
 
@@ -14,14 +16,14 @@ const storage = multer.diskStorage({
     cb(null, uniqueSuffix + path.extname(file.originalname));
   },
 });
+const upload = multer({ storage });
 
-const upload = multer({ storage: storage });
 
 // GET all pets
 router.get("/", async (req, res) => {
   try {
     const pets = await Pet.find()
-      .populate("owner", "userType shelterName shelterLocation") // Fetch user type & shelter info
+      .populate("owner", "userType name email shelterName shelterLocation") // Fetch user type & shelter info
       .sort({ createdAt: -1 });
     res.json(pets);
   } catch (err) {
@@ -30,48 +32,8 @@ router.get("/", async (req, res) => {
   }
 });
 
-// POST new pet ad
-router.post("/", upload.single("image"), async (req, res) => {
-  try {
-    const {
-      name,
-      type,
-      breed,
-      age,
-      gender,
-      location,
-      amount,
-      phone,
-      owner,
-      description,
-    } = req.body;
 
-    const newPet = new Pet({
-      name,
-      image: req.file ? `/uploads/${req.file.filename}` : "", //  use uploaded image
-      type,
-      age,
-      breed,
-      gender,
-      location,
-      amount,
-      phone,
-      vaccinated: false,
-      status: "Available",
-      isApproved: false,
-      owner,
-      description,
-    });
-
-    await newPet.save();
-    res.status(201).json({ message: "Pet Ad Created", pet: newPet });
-  } catch (error) {
-    console.error("Pet upload error:", error);
-    res.status(500).json({ message: "Error creating pet ad" });
-  }
-});
-
-//create pet route
+// ✅ POST new pet ad (shelter/user)
 router.post("/", upload.single("image"), async (req, res) => {
   try {
     const {
@@ -82,12 +44,9 @@ router.post("/", upload.single("image"), async (req, res) => {
     const user = await User.findById(owner);
     if (!user) return res.status(404).json({ message: "Owner not found" });
 
-    // ⛔ Shelter restriction: must fill profile
     if (user.userType === "Shelter") {
       if (!user.shelterName || !user.shelterLocation || !user.petTypes) {
-        return res.status(400).json({
-          message: "Shelter must complete profile before creating an ad.",
-        });
+        return res.status(400).json({ message: "Shelter must complete profile before creating an ad." });
       }
     }
 
@@ -99,7 +58,9 @@ router.post("/", upload.single("image"), async (req, res) => {
       gender,
       location,
       amount,
+      vaccinated: false,
       phone,
+      status: "Available",
       description,
       image: req.file ? `/uploads/${req.file.filename}` : "",
       owner: user._id,
@@ -113,6 +74,19 @@ router.post("/", upload.single("image"), async (req, res) => {
     res.status(500).json({ message: "Error creating pet ad" });
   }
 });
+
+
+// ✅ DELETE a pet listing (admin only)
+router.delete('/:id', isAdmin, async (req, res) => {
+  try {
+    await Pet.findByIdAndDelete(req.params.id);
+    res.json({ msg: "Listing deleted successfully" });
+  } catch (err) {
+    console.error("Delete error:", err);
+    res.status(500).json({ msg: "Server error" });
+  }
+});
+
 
 
 module.exports = router;

@@ -1,80 +1,54 @@
-import React, { useState } from "react";
+import React from "react";
 import { GoogleLogin } from "@react-oauth/google";
 import { jwtDecode } from "jwt-decode";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
-const GoogleButton = ({ disabled }) => {
+const GoogleButton = () => {
   const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(false);
 
   const handleGoogleSuccess = async (credentialResponse) => {
-    if (!credentialResponse?.credential) {
-      console.error("No credential received from Google");
-      return;
-    }
-
-    setIsLoading(true);
     try {
       const decoded = jwtDecode(credentialResponse.credential);
-      const { name: userName, email, sub: googleId } = decoded;
+      const { name: userName, email } = decoded;
 
-      console.log("Google user:", { userName, email, googleId });
+      console.log("Google user:", { userName, email });
 
-      const response = await axios.post(
-        `${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/auth/google-login`,
-        {
-          name: userName,
-          email: email,
-          googleId: googleId
-        }
-      );
+      const response = await axios.post("http://localhost:5000/api/auth/google-login", {
+        name: userName,
+        email,
+      });
 
       const { token, userType, userId } = response.data;
 
       if (!userId || !token || !userType) {
-        throw new Error("Invalid response from server");
+        alert("Something went wrong during Google login.");
+        return;
       }
 
-      // Store user data
       localStorage.setItem("token", token);
       localStorage.setItem("userType", userType);
       localStorage.setItem("userId", userId);
       localStorage.setItem("userName", userName);
       localStorage.setItem("email", email);
 
-      // Configure axios defaults
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      console.log("Stored userId:", userId);
+      console.log("UserType:", userType);
 
-      // Close any open modals
-      window.dispatchEvent(new CustomEvent('closeModals'));
-
-      // Navigate based on user type
       if (userType === "Pending") {
-        navigate("/select-user-type");
+        setTimeout(() => {
+          navigate("/select-user-type");
+        }, 50);
       } else {
-        switch(userType) {
-          case 'admin':
-            navigate("/admin-dashboard");
-            break;
-          case 'shelter':
-            navigate("/shelter-dashboard");
-            break;
-          default:
-            navigate("/user-dashboard");
-        }
+        window.location.href = "/";
       }
+      window.dispatchEvent(new Event("closeModals"));
 
     } catch (err) {
-      console.error("Google login error:", err);
-      const errorMessage = err.response?.data?.msg || err.message || "Google login failed";
-      alert(errorMessage);
-    } finally {
-      setIsLoading(false);
+      console.error("Google login error:", err.response?.data || err.message || err);
+      alert("Google login failed");
     }
   };
-
-
 
   return (
     <div style={styles.wrapper}>
@@ -82,14 +56,12 @@ const GoogleButton = ({ disabled }) => {
         onSuccess={handleGoogleSuccess}
         onError={() => {
           console.log("Google Login Failed");
-          alert("Google Login Failed. Please try again.");
+          alert("Google Login Failed");
         }}
         width="100%"
         theme="outline"
         size="large"
         shape="rectangular"
-        disabled={disabled || isLoading}
-
       />
     </div>
   );

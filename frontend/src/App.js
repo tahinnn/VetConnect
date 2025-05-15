@@ -68,12 +68,19 @@ function AppContent() {
       setShowLoginModal(false);
     };
 
+    const handleClose = () => {
+      setShowLoginModal(false);
+      setShowSignupModal(false);
+    };
+
     window.addEventListener('openLoginModal', handleOpenLogin);
     window.addEventListener('openSignupModal', handleOpenSignup);
+    window.addEventListener('closeModals', handleClose);
 
     return () => {
       window.removeEventListener('openLoginModal', handleOpenLogin);
       window.removeEventListener('openSignupModal', handleOpenSignup);
+      window.removeEventListener('closeModals', handleClose);
     };
   }, []);
 

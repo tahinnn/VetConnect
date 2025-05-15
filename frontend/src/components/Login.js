@@ -1,105 +1,73 @@
 import React, { useState } from "react";
 import axios from "axios";
 import GoogleButton from "./GoogleButton";
-import { useNavigate } from "react-router-dom";
 
 const Login = () => {
-  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     email: "",
     password: "",
   });
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
 
   const { email, password } = formData;
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
-    setError(""); // Clear error when user types
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError("");
-    setLoading(true);
-
     try {
-      console.log('Attempting login...'); // Debug log
-      const response = await axios.post(
-        `${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/auth/login`,
-        formData
-      );
+      const response = await axios.post("http://localhost:5000/api/auth/login", formData);
 
-      console.log('Login response:', response.data); // Debug log
+      const { token, userType, userId } = response.data;
 
-      const { token, userType, userId, name: userName, email: userEmail } = response.data;
+      // Optional: you may want to fetch profile here to get userName/email
+      const profileRes = await axios.get(`http://localhost:5000/api/auth/profile/${userId}`);
+      const { name, email: profileEmail } = profileRes.data;
 
-      // Store user data with consistent casing
       localStorage.setItem("token", token);
-      localStorage.setItem("userType", userType.toLowerCase()); // Store in lowercase
+      localStorage.setItem("userType", userType);
       localStorage.setItem("userId", userId);
-      localStorage.setItem("userName", userName);
-      localStorage.setItem("email", userEmail);
+      localStorage.setItem("userName", name);
+      localStorage.setItem("email", profileEmail);
 
-      // Configure axios defaults for future requests
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-
-      // Close the modal
-      window.dispatchEvent(new CustomEvent('closeModals'));
-      
-      // Navigate based on user type (case-insensitive comparison)
-      switch(userType.toLowerCase()) {
-        case 'admin':
-          navigate("/admin-dashboard");
-          break;
-        case 'shelter':
-          navigate("/shelter-dashboard");
-          break;
-        default:
-          navigate("/user-dashboard");
-      }
+      alert("Login successful!");
+      window.location.href = "/";
     } catch (error) {
-      console.error('Login error:', error.response || error);
-      const errorMsg = error.response?.data?.msg || "Login failed. Please try again.";
-      setError(errorMsg);
-    } finally {
-      setLoading(false);
+      if (error.response?.status === 403) {
+        alert("Password not set. Please sign in with Google.");
+      } else {
+        alert("Login failed. Please check your credentials.");
+      }
     }
   };
 
   return (
-    <div className="auth-form">
-      {error && <div className="error-message">{error}</div>}
-      <form onSubmit={handleSubmit}>
-        <div className="form-group">
-          <input
-            type="email"
-            placeholder="Email"
-            name="email"
-            value={email}
-            onChange={handleChange}
-            required
-          />
-        </div>
-        <div className="form-group">
-          <input
-            type="password"
-            placeholder="Password"
-            name="password"
-            value={password}
-            onChange={handleChange}
-            required
-          />
-        </div>
-        <button type="submit" disabled={loading}>
-          {loading ? "Logging in..." : "Login"}
-        </button>
+    <div>
+      <form onSubmit={handleSubmit} className="modal-form">
+        <input
+          type="email"
+          name="email"
+          value={email}
+          onChange={handleChange}
+          placeholder="Email"
+          required
+          className="modal-input"
+        />
+        <input
+          type="password"
+          name="password"
+          value={password}
+          onChange={handleChange}
+          placeholder="Password"
+          required
+          className="modal-input"
+        />
+        <button type="submit" className="modal-button">Login</button>
       </form>
-      <div className="google-login">
-        <GoogleButton disabled={loading} />
-      </div>
+      <div className="divider">or</div>
+      <GoogleButton />
     </div>
   );
 };

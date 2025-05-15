@@ -2,8 +2,8 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User'); 
 
 // Middleware to verify if the user is an admin
-const isAdmin = async (req, res, next) => {
-  const token = req.header("x-auth-token") || req.header("Authorization")?.replace("Bearer ", "");
+const isAdmin = (req, res, next) => {
+  const token = req.header("x-auth-token");
 
   if (!token) {
     return res.status(401).json({ msg: "No token, authorization denied" });
@@ -11,22 +11,17 @@ const isAdmin = async (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    
-    // Get user from database
-    const user = await User.findById(decoded.userId);
-    if (!user) {
-      return res.status(401).json({ msg: "User not found" });
-    }
+    req.user = decoded.userId;
 
-    // Case-insensitive comparison for admin check
-    if (user.userType.toLowerCase() !== "admin") {
-      return res.status(403).json({ msg: "Access denied. Admin privileges required." });
-    }
-
-    req.user = user;
-    next();
+    // Get user type (admin) from the database using the userId
+    User.findById(req.user).then((user) => {
+      if (user.userType !== "Admin") {
+        return res.status(403).json({ msg: "Access denied" });
+      }
+      next();
+    });
   } catch (err) {
-    console.error("Auth error:", err);
+    console.error(err);
     res.status(401).json({ msg: "Token is not valid" });
   }
 };

@@ -9,77 +9,57 @@ const Register = () => {
     name: "",
     email: "",
     password: "",
-    userType: "user", // Default to regular user
+    userType: "Pending",
   });
 
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
   const { name, email, password } = formData;
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
-    setError(""); // Clear error when user types
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError("");
-    setLoading(true);
+  e.preventDefault();
+  try {
+    await axios.post("http://localhost:5000/api/auth/register", formData);
+    alert("User registered successfully!");
 
-    try {
-      const response = await axios.post(
-        `${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/auth/register`,
-        formData
-      );
+    const loginResponse = await axios.post("http://localhost:5000/api/auth/login", {
+      email: formData.email,
+      password: formData.password,
+    });
 
-      const { token, userType, userId, name: userName, email: userEmail } = response.data;
+    const { token, userType, userId, name, email } = loginResponse.data;
 
-      // Store user data
-      localStorage.setItem("token", token);
-      localStorage.setItem("userType", userType);
-      localStorage.setItem("userId", userId);
-      localStorage.setItem("userName", userName);
-      localStorage.setItem("email", userEmail);
+    localStorage.setItem("token", token);
+    localStorage.setItem("userType", userType);
+    localStorage.setItem("userId", userId);
+    localStorage.setItem("userName", name);
+    localStorage.setItem("email", email);
 
-      // Configure axios defaults
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    window.dispatchEvent(new Event("userLoggedIn"));
 
-      // Close any open modals
-      window.dispatchEvent(new CustomEvent('closeModals'));
-
-      // Navigate based on user type
-      if (userType === "Pending") {
-        navigate("/select-user-type");
-      } else {
-        switch(userType) {
-          case 'admin':
-            navigate("/admin-dashboard");
-            break;
-          case 'shelter':
-            navigate("/shelter-dashboard");
-            break;
-          default:
-            navigate("/user-dashboard");
-        }
-      }
-    } catch (error) {
-      console.error('Registration error:', error);
-      const errorMsg = error.response?.data?.msg || "Registration failed. Please try again.";
-      setError(errorMsg);
-    } finally {
-      setLoading(false);
+    if (userType.toLowerCase() === "pending") {
+      navigate("/select-user-type");
+    } else {
+      navigate("/");
     }
-  };
+    // Close the modal after navigation
+    window.dispatchEvent(new Event("closeModals"));
+    
+  } catch (error) {
+    const errorMsg = error.response?.data?.msg || "Registration or login failed!";
+    alert(errorMsg);
+    setError(errorMsg);
+  }
+};
+
 
   return (
     <div>
       <form onSubmit={handleSubmit} className="modal-form">
-        {error && (
-          <div className="error-message" style={{ color: 'red', marginBottom: '10px' }}>
-            {error}
-          </div>
-        )}
         <input
           type="text"
           name="name"
@@ -88,7 +68,6 @@ const Register = () => {
           placeholder="Full Name"
           required
           className="modal-input"
-          disabled={loading}
         />
         <input
           type="email"
@@ -98,29 +77,20 @@ const Register = () => {
           placeholder="Email"
           required
           className="modal-input"
-          disabled={loading}
         />
         <input
           type="password"
           name="password"
           value={password}
           onChange={handleChange}
-          placeholder="Password (min. 6 characters)"
+          placeholder="Password"
           required
-          minLength={6}
           className="modal-input"
-          disabled={loading}
         />
-        <button 
-          type="submit" 
-          className="modal-button"
-          disabled={loading}
-        >
-          {loading ? 'Registering...' : 'Register'}
-        </button>
+        <button type="submit" className="modal-button">Register</button>
       </form>
       <div className="divider">or</div>
-      <GoogleButton disabled={loading} />
+      <GoogleButton />
     </div>
   );
 };

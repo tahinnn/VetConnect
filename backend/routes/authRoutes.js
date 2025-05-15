@@ -4,17 +4,42 @@ const jwt = require('jsonwebtoken');
 const isAdmin = require('../middleware/authMiddleware');
 const User = require('../models/User');
 const Pet = require('../models/Pet');
-const Appointment = require('../models/Appointment');
-const ShelterBooking = require('../models/ShelterBooking');
 const router = express.Router();
+const multer = require("multer");
+const path = require("path");
 
-// Email validation function
-const validateEmail = (email) => {
-  const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return re.test(email);
-};
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, "uploads/shelters");
+  },
+  filename: (req, file, cb) => {
+    cb(null, `${Date.now()}-${file.originalname}`);
+  }
+});
 
-// Get profile data for user or shelter
+const upload = multer({ storage });
+router.put("/shelter/upload-image/:userId", upload.single("image"), async (req, res) => {
+  try {
+    const user = await User.findById(req.params.userId);
+    if (!user || user.userType !== "Shelter") {
+      return res.status(404).json({ msg: "Shelter not found" });
+    }
+
+    if (req.file) {
+      user.shelterImage = `/uploads/shelters/${req.file.filename}`;
+      await user.save();
+      res.json({ msg: "Image uploaded successfully", shelterImage: user.shelterImage });
+    } else {
+      res.status(400).json({ msg: "No image uploaded" });
+    }
+  } catch (err) {
+    console.error("Upload error:", err);
+    res.status(500).json({ msg: "Upload failed" });
+  }
+});
+
+
+// ✅ Get profile data for user or shelter
 router.get("/profile/:userId", async (req, res) => {
   try {
     const user = await User.findById(req.params.userId).select("-password");
@@ -27,43 +52,36 @@ router.get("/profile/:userId", async (req, res) => {
   }
 });
 
-// Update user profile
-router.put("/update-profile/:userId", async (req, res) => {
-  const { name, phone, address } = req.body;
-
-  try {
-    const user = await User.findById(req.params.userId);
-    if (!user) {
-      return res.status(404).json({ msg: "User not found" });
-    }
-
-    if (name) user.name = name;
-    if (phone) user.phone = phone;
-    if (address) user.address = address;
-
-    await user.save();
-    res.json({ msg: "Profile updated successfully", user });
-  } catch (err) {
-    console.error("Profile update error:", err);
-    res.status(500).json({ msg: "Server error" });
-  }
-});
-
-// Update shelter profile
 router.put("/update-shelter-profile/:userId", async (req, res) => {
-  const { name, shelterName, shelterLocation, phone, petTypes } = req.body;
+  const {
+    shelterName = "",
+    shelterLocation = "",
+    petTypes = "",
+    newPassword = "",
+  } = req.body;
 
   try {
     const user = await User.findById(req.params.userId);
-    if (!user || user.userType !== "shelter") {
+    if (!user || user.userType !== "Shelter") {
       return res.status(404).json({ msg: "Shelter not found" });
     }
 
-    if (name) user.name = name;
-    if (shelterName) user.shelterName = shelterName;
-    if (shelterLocation) user.shelterLocation = shelterLocation;
-    if (phone) user.phone = phone;
-    if (petTypes) user.petTypes = petTypes;
+    // Trim input fields
+    const trimmedShelterName = shelterName.trim();
+    const trimmedShelterLocation = shelterLocation.trim();
+    const trimmedPetTypes = petTypes.trim();
+
+    // Update fields only if values are present
+    if (trimmedShelterName) user.shelterName = trimmedShelterName;
+    if (trimmedShelterLocation) user.shelterLocation = trimmedShelterLocation;
+    if (trimmedPetTypes) user.petTypes = trimmedPetTypes;
+
+    // Handle password
+    if (newPassword && newPassword.trim().length >= 6) {
+      const salt = await bcrypt.genSalt(10);
+      const hashed = await bcrypt.hash(newPassword.trim(), salt);
+      user.password = hashed;
+    }
 
     await user.save();
     res.json({ msg: "Shelter profile updated", user });
@@ -73,32 +91,56 @@ router.put("/update-shelter-profile/:userId", async (req, res) => {
   }
 });
 
+// Update Profile (backend)
+router.put("/update-profile/:userId", async (req, res) => {
+  const { name, newPassword } = req.body;
+
+  try {
+    const user = await User.findById(req.params.userId);
+    if (!user) return res.status(404).json({ msg: "User not found" });
+
+    if (name) user.name = name;
+
+    if (newPassword && newPassword.length >= 6) {
+      const salt = await bcrypt.genSalt(10);
+      const hashed = await bcrypt.hash(newPassword, salt);
+      user.password = hashed;
+    }
+
+    await user.save();
+    res.json({ msg: "Profile updated", user });
+  } catch (err) {
+    console.error("Profile update error:", err);
+    res.status(500).json({ msg: "Server error" });
+  }
+});
+
 // --------------- Admin Routes ---------------
 
-// Get all users with their activities (Admin only)
+// Get all users (Admin only)
 router.get('/admin/users', isAdmin, async (req, res) => {
   try {
-    const users = await User.find({}).select('-password');
-    const appointments = await Appointment.find({}).populate('userId', 'name email');
-    const shelterBookings = await ShelterBooking.find({}).populate('userId', 'name email');
-
-    // Enhance user data with their activities
-    const enhancedUsers = users.map(user => {
-      const userAppointments = appointments.filter(app => app.userId?._id.toString() === user._id.toString());
-      const userBookings = shelterBookings.filter(book => book.userId.toString() === user._id.toString());
-
-      return {
-        ...user.toObject(),
-        appointments: userAppointments,
-        shelterBookings: userBookings,
-        activityCount: userAppointments.length + userBookings.length
-      };
-    });
-
-    res.json(enhancedUsers);
+    const users = await User.find({});
+    res.json(users);
   } catch (error) {
-    console.error('Admin users fetch error:', error);
-    res.status(500).json({ message: 'Server error', error: error.message });
+    res.status(500).send('Server error');
+  }
+});
+
+
+// New Toggle Ban/Unban option
+router.put('/admin/ban-user/:userId', isAdmin, async (req, res) => {
+  try {
+    const user = await User.findById(req.params.userId);
+    if (!user) return res.status(404).json({ msg: 'User not found' });
+
+    user.isBanned = !user.isBanned;
+    await user.save();
+
+    res.json({ msg: `User ${user.isBanned ? "banned" : "unbanned"} successfully`, user });
+  } catch (error) {
+    console.error("Ban toggle error:", error);
+    res.status(500).send('Server error');
   }
 });
 
@@ -116,72 +158,6 @@ router.put('/admin/make-admin/:userId', isAdmin, async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).send('Server error');
-  }
-});
-
-// Ban or unban a user
-router.put('/admin/toggle-ban/:userId', isAdmin, async (req, res) => {
-  try {
-    const user = await User.findById(req.params.userId);
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-
-    // Toggle ban status
-    user.isBanned = !user.isBanned;
-    await user.save();
-
-    // Cancel all pending appointments and bookings if user is banned
-    if (user.isBanned) {
-      await Appointment.updateMany(
-        { userId: user._id, status: 'pending' },
-        { status: 'cancelled', cancellationReason: 'User account banned' }
-      );
-
-      await ShelterBooking.updateMany(
-        { userId: user._id, status: 'pending' },
-        { status: 'cancelled', cancellationReason: 'User account banned' }
-      );
-    }
-
-    res.json({ 
-      message: user.isBanned ? 'User banned successfully' : 'User unbanned successfully',
-      user
-    });
-  } catch (error) {
-    console.error('Ban toggle error:', error);
-    res.status(500).json({ message: 'Server error', error: error.message });
-  }
-});
-
-// Get user activity details
-router.get('/admin/user-activity/:userId', isAdmin, async (req, res) => {
-  try {
-    const user = await User.findById(req.params.userId).select('-password -googleId');
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-
-    const [appointments, bookings] = await Promise.all([
-      Appointment.find({ userId: user._id })
-        .sort('-createdAt')
-        .limit(10),
-      ShelterBooking.find({ userId: user._id })
-        .sort('-createdAt')
-        .limit(10)
-    ]);
-
-    res.json({
-      user: user.toJSON(),
-      activity: {
-        appointments,
-        bookings,
-        log: user.activityLog
-      }
-    });
-  } catch (error) {
-    console.error('User activity fetch error:', error);
-    res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
 
@@ -207,73 +183,79 @@ router.put('/admin/approve-pet/:petId', isAdmin, async (req, res) => {
 
 // --------------- Authentication Routes ---------------
 
-// Register
+// Register a user
 router.post('/register', async (req, res) => {
+  const { name, email, password, userType } = req.body;
   try {
-    const { name, email, password, userType } = req.body;
+    const existingUser = await User.findOne({ email });
+    if (existingUser) return res.status(400).json({ msg: 'User already exists' });
 
-    // Validate input
-    if (!name || !email || !password) {
-      return res.status(400).json({
-        success: false,
-        msg: 'Please provide all required fields'
-      });
-    }
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
 
-    // Validate email format
-    if (!validateEmail(email)) {
-      return res.status(400).json({
-        success: false,
-        msg: 'Please provide a valid email address'
-      });
-    }
-
-    // Validate password length
-    if (password.length < 6) {
-      return res.status(400).json({
-        success: false,
-        msg: 'Password must be at least 6 characters long'
-      });
-    }
-
-    // Validate user type
-    if (userType && !['user', 'shelter'].includes(userType)) {
-      return res.status(400).json({
-        success: false,
-        msg: 'Invalid user type'
-      });
-    }
-
-    // Check if user exists
-    let user = await User.findOne({ email: email.toLowerCase() });
-    if (user) {
-      return res.status(400).json({
-        success: false,
-        msg: 'An account with this email already exists'
-      });
-    }
-
-    // Create new user
-    user = new User({
+    const newUser = new User({
       name,
-      email: email.toLowerCase(),
-      password,
-      userType: userType || 'user',
-      authType: 'local'
+      email,
+      password: hashedPassword,
+      userType: userType || "Pending", // Default to Pending if not provided
     });
 
-    await user.save();
+    await newUser.save();
 
-    // Create token
-    const token = jwt.sign(
-      { userId: user._id },
-      process.env.JWT_SECRET,
-      { expiresIn: '24h' }
-    );
+    return res.status(201).json({ userId: newUser._id });
+  } catch (err) {
+    console.error("Register error:", err);
+    res.status(500).json({ msg: 'Server error during registration' });
+  }
+});
 
-    // Return user data in the format expected by frontend
-    res.status(201).json({
-      success: true,
+
+// Login route
+router.post('/login', async (req, res) => {
+  const { email, password } = req.body;
+  try {
+    const user = await User.findOne({ email });
+    if (!user) return res.status(400).json({ msg: 'Invalid credentials' });
+
+    if (!user.password || user.password === 'google-auth') {
+      return res.status(403).json({ msg: 'Password not set. Please sign in with Google.' });
+    }
+
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) return res.status(400).json({ msg: 'Invalid credentials' });
+
+    const payload = { userId: user._id };
+    const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' });
+
+    res.json({ 
+      token,
+      userType: user.userType,
+      userId: user._id,
+      name: user.name,
+      email: user.email
+    });
+    
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Server error');
+  }
+});
+
+
+// Google Login
+router.post('/google-login', async (req, res) => {
+  const { name, email } = req.body;
+  if (!email) return res.status(400).json({ msg: 'Email is required' });
+
+  try {
+    let user = await User.findOne({ email });
+    if (!user) {
+      user = new User({ name, email, password: 'google-auth', userType: 'Pending' });
+      await user.save();
+    }
+
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    res.json({ 
       token,
       userType: user.userType,
       userId: user._id,
@@ -281,164 +263,11 @@ router.post('/register', async (req, res) => {
       email: user.email
     });
   } catch (error) {
-    console.error('Registration error:', error);
-    
-    // Handle specific MongoDB errors
-    if (error.code === 11000) {
-      return res.status(400).json({
-        success: false,
-        msg: 'An account with this email already exists'
-      });
-    }
-
-    // Handle validation errors
-    if (error.name === 'ValidationError') {
-      const messages = Object.values(error.errors).map(err => err.message);
-      return res.status(400).json({
-        success: false,
-        msg: messages.join(', ')
-      });
-    }
-
-    res.status(500).json({
-      success: false,
-      msg: 'Registration failed. Please try again.'
-    });
+    console.error(error);
+    res.status(500).send("Server error");
   }
 });
 
-// Login
-router.post('/login', async (req, res) => {
-  try {
-    const { email, password } = req.body;
-
-    // Validate input
-    if (!email || !password) {
-      return res.status(400).json({
-        msg: 'Please provide both email and password'
-      });
-    }
-
-    // Find user
-    const user = await User.findOne({ email: email.toLowerCase() });
-    if (!user) {
-      return res.status(401).json({
-        msg: 'Invalid email or password'
-      });
-    }
-
-    // Check if user is banned
-    if (user.isBanned) {
-      return res.status(403).json({
-        msg: 'Your account has been suspended. Please contact support.'
-      });
-    }
-
-    // Check if Google user
-    if (user.authType === 'google') {
-      return res.status(400).json({
-        msg: 'Please login with Google'
-      });
-    }
-
-    // Verify password
-    const isMatch = await user.comparePassword(password);
-    if (!isMatch) {
-      return res.status(401).json({
-        msg: 'Invalid email or password'
-      });
-    }
-
-    // Create token
-    const token = jwt.sign(
-      { userId: user._id },
-      process.env.JWT_SECRET,
-      { expiresIn: '24h' }
-    );
-
-    // Return user data in the format expected by frontend
-    res.json({
-      token,
-      userType: user.userType,
-      userId: user._id,
-      name: user.name,
-      email: user.email
-    });
-    
-  } catch (err) {
-    console.error('Login error:', err);
-    res.status(500).json({
-      msg: 'An error occurred during login. Please try again.'
-    });
-  }
-});
-
-// Google Login
-router.post('/google-login', async (req, res) => {
-  try {
-    const { name, email, googleId } = req.body;
-
-    if (!email || !googleId) {
-      return res.status(400).json({
-        success: false,
-        message: 'Email and Google ID are required'
-      });
-    }
-
-    // Find or create user
-    let user = await User.findOne({ email: email.toLowerCase() });
-
-    if (!user) {
-      // Create new user
-      user = new User({
-        name,
-        email: email.toLowerCase(),
-        authType: 'google',
-        googleId,
-        userType: 'Pending' // User will need to select their type
-      });
-      await user.save();
-    } else if (user.authType !== 'google') {
-      // User exists but with different auth type
-      return res.status(400).json({
-        success: false,
-        message: 'Please login with your email and password'
-      });
-    }
-
-    // Check if user is banned
-    if (user.isBanned) {
-      return res.status(403).json({
-        success: false,
-        message: 'Your account has been suspended. Please contact support.'
-      });
-    }
-
-    // Create token
-    const token = jwt.sign(
-      { userId: user._id },
-      process.env.JWT_SECRET,
-      { expiresIn: '24h' }
-    );
-
-    // Return user data
-    res.json({
-      success: true,
-      token,
-      userType: user.userType,
-      userId: user._id,
-      name: user.name,
-      email: user.email
-    });
-
-  } catch (err) {
-    console.error('Google login error:', err);
-    res.status(500).json({
-      success: false,
-      message: 'An error occurred during Google login'
-    });
-  }
-});
 
 // Update User Type
 router.put('/update-user-type/:userId', async (req, res) => {
