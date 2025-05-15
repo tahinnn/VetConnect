@@ -1,0 +1,228 @@
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-20px); }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes progress {
+  0% { width: 0; }
+  100% { width: 75%; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.construction-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #6e8efb, #ff9f9f);
+  padding: 40px 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.construction-content {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 30px;
+  padding: 40px;
+  max-width: 800px;
+  width: 100%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+  animation: float 6s ease-in-out infinite;
+}
+
+.construction-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.construction-header h1 {
+  color: #4a4a4a;
+  font-size: 2.5em;
+  text-align: center;
+  margin: 0;
+}
+
+.emoji {
+  font-size: 2.5em;
+  animation: bounce 2s infinite;
+}
+
+.coming-soon {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.coming-soon h2 {
+  color: #6e8efb;
+  font-size: 3em;
+  margin: 0;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.developer-tools {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.developer-tools span {
+  font-size: 2em;
+  animation: spin 4s linear infinite;
+}
+
+.construction-message {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.construction-message p {
+  color: #666;
+  font-size: 1.2em;
+  margin-bottom: 30px;
+}
+
+.features {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+  margin-top: 30px;
+}
+
+.feature {
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  padding: 20px;
+  border-radius: 15px;
+  text-align: center;
+  transition: transform 0.3s ease;
+}
+
+.feature:hover {
+  transform: translateY(-5px);
+}
+
+.feature span {
+  font-size: 2em;
+  margin-bottom: 10px;
+  display: block;
+}
+
+.feature p {
+  margin: 10px 0 0;
+  color: #4a4a4a;
+  font-weight: 500;
+}
+
+.developer-team {
+  text-align: center;
+  margin: 40px 0;
+}
+
+.developer-team h3 {
+  color: #4a4a4a;
+  margin-bottom: 20px;
+}
+
+.progress-bar {
+  background: #e0e0e0;
+  height: 20px;
+  border-radius: 10px;
+  overflow: hidden;
+  margin: 20px 0;
+}
+
+.progress {
+  background: linear-gradient(90deg, #6e8efb, #ff9f9f);
+  height: 100%;
+  width: 0;
+  animation: progress 2s ease-out forwards;
+}
+
+.progress-text {
+  color: #6e8efb;
+  font-weight: bold;
+}
+
+.launch-countdown {
+  text-align: center;
+  margin: 40px 0;
+}
+
+.countdown-timer {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.time-unit {
+  background: linear-gradient(135deg, #6e8efb, #ff9f9f);
+  color: white;
+  padding: 20px;
+  border-radius: 15px;
+  min-width: 100px;
+}
+
+.time-unit span {
+  font-size: 2em;
+  font-weight: bold;
+  display: block;
+}
+
+.time-unit p {
+  margin: 5px 0 0;
+  font-size: 0.9em;
+  opacity: 0.9;
+}
+
+.notification-signup {
+  text-align: center;
+  margin-top: 40px;
+}
+
+.signup-form {
+  display: flex;
+  gap: 10px;
+  max-width: 500px;
+  margin: 20px auto 0;
+}
+
+.signup-form input {
+  flex: 1;
+  padding: 15px;
+  border: 2px solid #e0e0e0;
+  border-radius: 25px;
+  font-size: 1em;
+  transition: border-color 0.3s ease;
+}
+
+.signup-form input:focus {
+  outline: none;
+  border-color: #6e8efb;
+}
+
+.signup-form button {
+  background: linear-gradient(45deg, #6e8efb, #ff9f9f);
+  color: white;
+  border: none;
+  padding: 15px 30px;
+  border-radius: 25px;
+  font-size: 1em;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+}
+
+.signup-form button:hover {
+  transform: translateY(-2px);
+}

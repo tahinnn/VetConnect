@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import "./UserProfilePage.css"; // Reuse existing styles
+import "./UserProfilePage.css"; // Reuse styles
 
 const AdminProfilePage = () => {
   const [activeTab, setActiveTab] = useState("adminInfo");
@@ -10,26 +10,55 @@ const AdminProfilePage = () => {
     newPassword: "",
     confirmPassword: "",
   });
-
   const [users, setUsers] = useState([]);
   const [pets, setPets] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const userId = localStorage.getItem("userId");
   const token = localStorage.getItem("token");
+  const userId = localStorage.getItem("userId");
 
   useEffect(() => {
-    // Load admin profile info
+    if (!userId || !token) {
+      alert("Admin not logged in.");
+      setLoading(false);
+      return;
+    }
+
+    // Fetch admin profile
     axios
-      .get(`http://localhost:5000/api/auth/profile/${userId}`)
+      .get(`http://localhost:5000/api/auth/profile/${userId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
       .then((res) => {
         const { name, email } = res.data;
         setAdminData((prev) => ({ ...prev, name, email }));
       })
       .catch((err) => {
-        console.error("Failed to fetch admin profile:", err);
-        alert("Error loading admin data");
+        console.error("Error fetching admin profile:", err);
+        alert("Failed to load admin profile.");
       });
-  }, [userId]);
+
+    // Fetch all users
+    axios
+      .get("http://localhost:5000/api/admin/users", {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      .then((res) => setUsers(res.data))
+      .catch((err) => {
+        console.error("Failed to load users:", err);
+      });
+
+    // Fetch all pets
+    axios
+      .get("http://localhost:5000/api/admin/pets", {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      .then((res) => setPets(res.data))
+      .catch((err) => {
+        console.error("Failed to load pets:", err);
+      })
+      .finally(() => setLoading(false));
+  }, [token, userId]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -37,97 +66,48 @@ const AdminProfilePage = () => {
   };
 
   const handleSave = async () => {
-    const { name, newPassword, confirmPassword } = adminData;
-
+    const { newPassword, confirmPassword, name } = adminData;
     if (newPassword && newPassword !== confirmPassword) {
-      alert("Passwords don’t match");
+      alert("Passwords do not match");
+      return;
+    }
+    if (!userId || !token) {
+      alert("Admin not logged in.");
       return;
     }
 
     try {
-      await axios.put(`http://localhost:5000/api/auth/update-profile/${userId}`, {
-        name,
-        newPassword,
-      });
-
-      alert("Admin profile updated!");
-    } catch (err) {
-      console.error("Update failed:", err);
-      alert("Failed to update admin profile");
-    }
-  };
-
-  const loadUsers = async () => {
-    try {
-      const res = await axios.get("http://localhost:5000/api/auth/admin/users", {
-        headers: { "x-auth-token": token },
-      });
-      setUsers(res.data);
-    } catch (err) {
-      console.error("Failed to fetch users:", err);
-      alert("Error loading users");
-    }
-  };
-
-  const handleBanToggle = async (id, isBanned) => {
-    try {
       await axios.put(
-        `http://localhost:5000/api/auth/admin/ban-user/${id}`,
-        {},
+        `http://localhost:5000/api/auth/update-profile/${userId}`,
         {
-          headers: { "x-auth-token": token },
+          name,
+          newPassword: newPassword || undefined,
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` },
         }
       );
-      loadUsers();
+      alert("Admin profile updated successfully!");
+      setAdminData((prev) => ({ ...prev, newPassword: "", confirmPassword: "" }));
     } catch (err) {
-      console.error("Ban toggle failed:", err);
-      alert("Failed to update user status");
+      console.error("Error updating admin profile:", err);
+      alert("Failed to update profile.");
     }
   };
 
-  const loadPets = async () => {
-    try {
-      const res = await axios.get("http://localhost:5000/api/auth/admin/pets", {
-        headers: { "x-auth-token": token },
-      });
-      setPets(res.data);
-    } catch (err) {
-      console.error("Failed to fetch pets:", err);
-      alert("Error loading listings");
-    }
-  };
-
-  const handleDeleteListing = async (petId) => {
-    try {
-      await axios.delete(`http://localhost:5000/api/pets/${petId}`, {
-        headers: { "x-auth-token": token },
-      });
-      loadPets();
-      alert("Listing deleted");
-    } catch (err) {
-      console.error("Delete failed:", err);
-      alert("Failed to delete listing");
-    }
-  };
-
-  useEffect(() => {
-    if (activeTab === "allUsers") loadUsers();
-    if (activeTab === "allListings") loadPets();
-  }, [activeTab]);
+  if (loading) return <p>Loading admin profile...</p>;
 
   return (
     <div className="profile-container">
-      {/* Sidebar */}
       <div className="sidebar">
         <h2>Admin Profile</h2>
         <ul>
-          <li className={activeTab === "adminInfo" ? "active" : ""} onClick={() => setActiveTab("adminInfo")}>🧑‍💼 Admin Info</li>
-          <li className={activeTab === "allUsers" ? "active" : ""} onClick={() => setActiveTab("allUsers")}>👥 Show All Users</li>
-          <li className={activeTab === "allListings" ? "active" : ""} onClick={() => setActiveTab("allListings")}>📋 Show All Listings</li>
+          <li className={activeTab === "adminInfo" ? "active" : ""} onClick={() => setActiveTab("adminInfo")}>👤 Admin Info</li>
+          <li className={activeTab === "users" ? "active" : ""} onClick={() => setActiveTab("users")}>👥 Users</li>
+          <li className={activeTab === "pets" ? "active" : ""} onClick={() => setActiveTab("pets")}>🐾 Pets</li>
         </ul>
       </div>
 
-      {/* Main Content */}
       <div className="main-profile-content">
         {activeTab === "adminInfo" && (
           <>
@@ -156,47 +136,37 @@ const AdminProfilePage = () => {
           </>
         )}
 
-        {activeTab === "allUsers" && (
+        {activeTab === "users" && (
           <>
             <h3 className="section-title">All Users</h3>
-            {users.map((user) => (
-              <div key={user._id} className="form-group" style={{ borderBottom: "1px solid #ddd", paddingBottom: "10px" }}>
-                <p><strong>Name:</strong> {user.name}</p>
-                <p><strong>Email:</strong> {user.email}</p>
-                <p><strong>Type:</strong> {user.userType}</p>
-                <p><strong>Banned:</strong> {user.isBanned ? "Yes" : "No"}</p>
-                <button
-                  className="save-btn"
-                  style={{
-                    backgroundColor: user.isBanned ? "#3b82f6" : "#dc2626",
-                  }}
-                  onClick={() => handleBanToggle(user._id, user.isBanned)}
-                >
-                  {user.isBanned ? "Unban" : "Ban"}
-                </button>
-              </div>
-            ))}
+            {users.length === 0 ? (
+              <p>No users found.</p>
+            ) : (
+              <ul>
+                {users.map((user) => (
+                  <li key={user._id}>
+                    {user.name} - {user.email} - Role: {user.role}
+                  </li>
+                ))}
+              </ul>
+            )}
           </>
         )}
 
-        {activeTab === "allListings" && (
+        {activeTab === "pets" && (
           <>
-            <h3 className="section-title">All Listings</h3>
-            {pets.map((pet) => (
-              <div key={pet._id} className="form-group" style={{ borderBottom: "1px solid #ddd", paddingBottom: "10px" }}>
-                <p><strong>Name:</strong> {pet.name}</p>
-                <p><strong>Type:</strong> {pet.type}</p>
-                <p><strong>Breed:</strong> {pet.breed}</p>
-                <p><strong>Owner:</strong> {pet.owner}</p>
-                <button
-                  className="save-btn"
-                  style={{ backgroundColor: "#dc2626" }}
-                  onClick={() => handleDeleteListing(pet._id)}
-                >
-                  Delete Listing
-                </button>
-              </div>
-            ))}
+            <h3 className="section-title">All Pets</h3>
+            {pets.length === 0 ? (
+              <p>No pets found.</p>
+            ) : (
+              <ul>
+                {pets.map((pet) => (
+                  <li key={pet._id}>
+                    {pet.name} - {pet.type} - Shelter: {pet.shelterName}
+                  </li>
+                ))}
+              </ul>
+            )}
           </>
         )}
       </div>

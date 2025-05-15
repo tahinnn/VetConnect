@@ -104,7 +104,6 @@ const Navbar = () => {
           <span className="dropbtn">Community</span>
           <div className="dropdown-content">
             <Link to="/forum">Forum</Link>
-            <Link to="/chatbot">Chatbot Assistance</Link>
             <Link to="/faq">FAQ</Link>
           </div>
         </div>

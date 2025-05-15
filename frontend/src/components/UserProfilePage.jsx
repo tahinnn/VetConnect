@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from 'axios';
+import axios from "axios";
 import "./UserProfilePage.css";
 
 const UserProfilePage = () => {
@@ -8,28 +8,34 @@ const UserProfilePage = () => {
     name: "",
     email: "",
     newPassword: "",
-    confirmPassword: ""
+    confirmPassword: "",
   });
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const userId = localStorage.getItem("userId");
-    if (!userId) return;
-  
-    axios.get(`http://localhost:5000/api/auth/profile/${userId}`)
+    if (!userId) {
+      alert("User not logged in.");
+      setLoading(false);
+      return;
+    }
+
+    axios
+      .get(`http://localhost:5000/api/auth/profile/${userId}`)
       .then((res) => {
         const { name, email } = res.data;
-        setUserData(prev => ({ ...prev, name, email }));
+        setUserData((prev) => ({ ...prev, name, email }));
       })
-      .catch(err => {
+      .catch((err) => {
         console.error("Failed to fetch profile:", err);
         alert("Error loading profile data");
-      });
+      })
+      .finally(() => setLoading(false));
   }, []);
-  
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setUserData({ ...userData, [name]: value });
+    setUserData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSave = async () => {
@@ -38,24 +44,30 @@ const UserProfilePage = () => {
       alert("Passwords do not match");
       return;
     }
-  
+
+    const userId = localStorage.getItem("userId");
+    if (!userId) {
+      alert("User not logged in.");
+      return;
+    }
+
     try {
-      const userId = localStorage.getItem("userId");
       await axios.put(`http://localhost:5000/api/auth/update-profile/${userId}`, {
         name,
-        newPassword,
+        newPassword: newPassword || undefined, // avoid sending empty string
       });
-  
       alert("Profile updated successfully!");
+      setUserData((prev) => ({ ...prev, newPassword: "", confirmPassword: "" })); // clear passwords
     } catch (err) {
       console.error("Update error:", err);
       alert("Failed to update profile.");
     }
   };
-  
+
+  if (loading) return <p>Loading profile...</p>;
+
   return (
     <div className="profile-container">
-      {/* Sidebar */}
       <div className="sidebar">
         <h2>User Profile</h2>
         <ul>
@@ -66,7 +78,6 @@ const UserProfilePage = () => {
         </ul>
       </div>
 
-      {/* Main Content */}
       <div className="main-profile-content">
         {activeTab === "userInfo" && (
           <>

@@ -32,7 +32,9 @@ import AdoptionPayment from './components/AdoptionPayment';
 import AdoptionSlip from './components/AdoptionSlip';
 // Profile-specific pages (used in ProfileRouter internally)
 import UserProfilePage from "./components/UserProfilePage";     
-import ShelterProfilePage from "./components/ShelterProfilePage"; 
+import ShelterProfilePage from "./components/ShelterProfilePage";
+import PetStore from "./components/PetStore"; 
+import PetWalking from "./components/PetWalking"; 
 
 import './App.css';
 import './styles.css';
@@ -132,6 +134,8 @@ function AppContent() {
         <Route path="/emergency-vet" element={<EmergencyVet />} />
         <Route path="/forum" element={<Forum />} />
         <Route path="/faq" element={<FAQ />} />
+        <Route path="/pet-store" element={<PetStore />} />
+        <Route path="/pet-walking" element={<PetWalking />} />
       </Routes>
 
       <ChatBot />

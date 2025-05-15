@@ -1,305 +1,91 @@
-import React, { useState, useEffect } from "react";
-import axios from "axios";
-import "./AdminDashboard.css";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 
 const AdminDashboard = () => {
-  const navigate = useNavigate();
   const [users, setUsers] = useState([]);
   const [pets, setPets] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [activeTab, setActiveTab] = useState('overview');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [stats, setStats] = useState({
-    totalUsers: 0,
-    totalPets: 0,
-    pendingApprovals: 0,
-    bannedUsers: 0,
-    totalAppointments: 0,
-    totalBookings: 0
-  });
-
-  const token = localStorage.getItem("token");
-  const userType = localStorage.getItem("userType")?.toLowerCase();
 
   useEffect(() => {
-    // Verify admin access
-    if (!token || userType !== 'admin') {
-      navigate('/');
-      return;
-    }
+    // Fetch users and pets when component mounts
+    axios.get('http://localhost:5000/api/admin/users')
+      .then(response => setUsers(response.data))
+      .catch(error => console.error("Error fetching users", error));
 
-    const fetchData = async () => {
-      try {
-        console.log('Fetching admin data...'); // Debug log
-        const [userRes, petRes] = await Promise.all([
-          axios.get("http://localhost:5000/api/auth/admin/users", {
-            headers: { 
-              "x-auth-token": token,
-              "Authorization": `Bearer ${token}`
-            }
-          }),
-          axios.get("http://localhost:5000/api/auth/admin/pets", {
-            headers: { 
-              "x-auth-token": token,
-              "Authorization": `Bearer ${token}`
-            }
-          })
-        ]);
+    axios.get('http://localhost:5000/api/admin/pets')
+      .then(response => setPets(response.data))
+      .catch(error => console.error("Error fetching pets", error))
+      .finally(() => setLoading(false));  // Set loading to false when data is fetched
+  }, []);
 
-        console.log('User response:', userRes.data); // Debug log
-        console.log('Pet response:', petRes.data); // Debug log
-
-        if (!userRes.data || !petRes.data) {
-          throw new Error("Invalid data received from server");
-        }
-
-        const users = userRes.data;
-        const pets = petRes.data;
-
-        setUsers(users);
-        setPets(pets);
-
-        // Calculate enhanced stats
-        const totalAppointments = users.reduce((sum, user) => sum + (user.appointments?.length || 0), 0);
-        const totalBookings = users.reduce((sum, user) => sum + (user.shelterBookings?.length || 0), 0);
-
-        setStats({
-          totalUsers: users.length,
-          totalPets: pets.length,
-          pendingApprovals: pets.filter(pet => !pet.isApproved).length,
-          bannedUsers: users.filter(user => user.isBanned).length,
-          totalAppointments,
-          totalBookings
-        });
-
-      } catch (error) {
-        console.error("Admin fetch error:", error.response || error); // Enhanced error logging
-        setError(error.response?.data?.message || error.message || "Failed to load admin dashboard data");
-        if (error.response?.status === 401 || error.response?.status === 403) {
-          navigate('/');
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [token, userType, navigate]);
-
-  const toggleBanUser = async (userId) => {
-    try {
-      const res = await axios.put(`http://localhost:5000/api/auth/admin/toggle-ban/${userId}`, {}, {
-        headers: { 
-          "x-auth-token": token,
-          "Authorization": `Bearer ${token}`
-        }
-      });
-      
-      // Update users list and stats
-      setUsers(prev => prev.map(u => u._id === userId ? res.data.user : u));
-      setStats(prev => ({
-        ...prev,
-        bannedUsers: prev.bannedUsers + (res.data.user.isBanned ? 1 : -1)
-      }));
-
-      alert(res.data.message);
-    } catch (err) {
-      alert("Failed to toggle ban status: " + err.message);
-    }
+  const handleBanUser = (userId) => {
+    axios.put(`http://localhost:5000/api/admin/ban-user/${userId}`)
+      .then(response => {
+        alert(response.data.msg);
+        setUsers(users.filter(user => user._id !== userId)); // Remove banned user from list
+      })
+      .catch(error => console.error("Error banning user", error));
   };
 
-  const approvePet = async (petId) => {
-    try {
-      const res = await axios.put(`http://localhost:5000/api/auth/admin/approve-pet/${petId}`, {}, {
-        headers: { 
-          "x-auth-token": token,
-          "Authorization": `Bearer ${token}`
-        }
-      });
-      
-      // Update pets list and stats
-      setPets(prev => prev.map(p => p._id === petId ? res.data.pet : p));
-      setStats(prev => ({
-        ...prev,
-        pendingApprovals: prev.pendingApprovals - 1
-      }));
-
-      alert("Pet listing has been approved successfully");
-    } catch (err) {
-      alert("Failed to approve pet: " + err.message);
-    }
+  const handleApprovePet = (petId) => {
+    axios.put(`http://localhost:5000/api/admin/approve-pet/${petId}`)
+      .then(response => {
+        alert(response.data.msg);
+        setPets(pets.filter(pet => pet._id !== petId)); // Remove approved pet from list
+      })
+      .catch(error => console.error("Error approving pet", error));
   };
 
   if (loading) {
-    return (
-      <div className="admin-profile-container">
-        <div className="loading-state">
-          <div className="spinner"></div>
-          <p>Loading admin dashboard...</p>
-        </div>
-      </div>
-    );
+    return <div>Loading...</div>;
   }
-
-  if (error) {
-    return (
-      <div className="admin-profile-container">
-        <div className="error-state">
-          <h2>Error Loading Dashboard</h2>
-          <p>{error}</p>
-          <button onClick={() => window.location.reload()}>Retry</button>
-        </div>
-      </div>
-    );
-  }
-
-  const filteredUsers = users.filter(user => 
-    user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.email?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
 
   return (
-    <div className="admin-profile-container">
-      <h2 className="dashboard-title">🔐 Admin Dashboard</h2>
+    <div style={styles.container}>
+      <h1>Admin Dashboard</h1>
 
-      {/* Statistics Grid */}
-      <div className="stats-grid">
-        <div className="stat-card">
-          <div className="stat-number">{stats.totalUsers}</div>
-          <div className="stat-label">Total Users</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-number">{stats.totalPets}</div>
-          <div className="stat-label">Total Pets</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-number">{stats.totalAppointments}</div>
-          <div className="stat-label">Total Appointments</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-number">{stats.totalBookings}</div>
-          <div className="stat-label">Shelter Bookings</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-number">{stats.pendingApprovals}</div>
-          <div className="stat-label">Pending Approvals</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-number">{stats.bannedUsers}</div>
-          <div className="stat-label">Banned Users</div>
-        </div>
-      </div>
+      <h2>Users</h2>
+      <ul>
+        {users.map(user => (
+          <li key={user._id}>
+            {user.name} - {user.userType}
+            <button onClick={() => handleBanUser(user._id)}>Ban</button>
+          </li>
+        ))}
+      </ul>
 
-      {/* Tab Navigation */}
-      <div className="admin-tabs">
-        <button 
-          className={`tab-button ${activeTab === 'overview' ? 'active' : ''}`}
-          onClick={() => setActiveTab('overview')}
-        >
-          Overview
-        </button>
-        <button 
-          className={`tab-button ${activeTab === 'users' ? 'active' : ''}`}
-          onClick={() => setActiveTab('users')}
-        >
-          Users
-        </button>
-        <button 
-          className={`tab-button ${activeTab === 'pets' ? 'active' : ''}`}
-          onClick={() => setActiveTab('pets')}
-        >
-          Pets
-        </button>
-      </div>
-
-      {/* Search Bar */}
-      <div className="search-bar">
-        <input
-          type="text"
-          placeholder="Search users by name or email..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-      </div>
-
-      {/* Users Section */}
-      <div className={`admin-section ${activeTab === 'users' ? '' : 'hidden'}`}>
-        <h3>👥 User Management</h3>
-        {filteredUsers.length === 0 ? (
-          <div className="empty-state">
-            <div className="empty-state-icon">👤</div>
-            <p>No users found</p>
-          </div>
-        ) : (
-          <div className="user-list">
-            {filteredUsers.map(user => (
-              <div key={user._id} className="user-card">
-                <div className="user-info">
-                  <span className="user-name">{user.name}</span>
-                  <span className="user-email">{user.email}</span>
-                  <span className="user-type">{user.userType}</span>
-                  <div className="user-activity">
-                    <span>Appointments: {user.appointments?.length || 0}</span>
-                    <span>Shelter Bookings: {user.shelterBookings?.length || 0}</span>
-                  </div>
-                </div>
-                <div className="action-buttons">
-                  <button 
-                    className={user.isBanned ? 'unban-button' : 'ban-button'}
-                    onClick={() => toggleBanUser(user._id)}
-                  >
-                    {user.isBanned ? '✓ Unban User' : '🚫 Ban User'}
-                  </button>
-                  <button 
-                    className="view-details-button"
-                    onClick={() => setActiveTab('details')}
-                  >
-                    📋 View Details
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div className="admin-section">
-        <h3>🐾 Pet Listings</h3>
-        {pets.length === 0 ? (
-          <div className="empty-state">
-            <div className="empty-state-icon">🐾</div>
-            <p>No pet listings found</p>
-          </div>
-        ) : (
-          <div className="pet-list">
-            {pets.map(pet => (
-              <div key={pet._id} className="pet-card">
-                <div className="pet-info">
-                  <span className="pet-name">{pet.name}</span>
-                  <span className="breed">{pet.breed}</span>
-                  <span className="pet-status">
-                    {pet.isApproved ? 'Approved' : 'Pending'}
-                  </span>
-                </div>
-                <div className="action-buttons">
-                  {!pet.isApproved && (
-                    <button 
-                      className="approve-button" 
-                      onClick={() => approvePet(pet._id)}
-                    >
-                      ✓ Approve
-                    </button>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+      <h2>Pet Listings</h2>
+      <ul>
+        {pets.map(pet => (
+          <li key={pet._id}>
+            {pet.name} - {pet.isApproved ? 'Approved' : 'Pending'}
+            <button onClick={() => handleApprovePet(pet._id)}>Approve</button>
+          </li>
+        ))}
+      </ul>
     </div>
   );
+};
+
+const styles = {
+  container: {
+    padding: '20px',
+    backgroundColor: '#f4f4f4',
+    borderRadius: '8px',
+    margin: '20px',
+    width: '80%',
+    marginLeft: 'auto',
+    marginRight: 'auto',
+  },
+  button: {
+    padding: '5px 10px',
+    backgroundColor: '#2196f3',
+    color: '#fff',
+    fontWeight: 'bold',
+    border: 'none',
+    borderRadius: '5px',
+    cursor: 'pointer',
+  },
 };
 
 export default AdminDashboard;

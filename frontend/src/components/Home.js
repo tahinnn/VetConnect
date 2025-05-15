@@ -1,7 +1,22 @@
-import React from 'react';
+// Home.js
+import React, { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const Home = () => {
+  const navigate = useNavigate();
 
+  useEffect(() => {
+    const userType = localStorage.getItem("userType");
+
+    if (userType === "shelter") {
+      navigate("/shelterprofile");
+    } else if (userType === "admin") {
+      navigate("/admindashboard");
+    } else if (userType === "user") {
+      navigate("/userprofile");
+    }
+    // else: stay on the landing page (maybe not logged in)
+  }, []);
 
   return (
     <div>
@@ -10,8 +25,6 @@ const Home = () => {
           <div className="hero-content">
             <h1 className="animated-title">Find Your Perfect Companion</h1>
             <p className="animated-subtitle">Adopt a pet and give them a forever home</p>
-            
-
             <div className="hero-features">
               <div className="feature-card">
                 <i className="fas fa-paw feature-icon"></i>

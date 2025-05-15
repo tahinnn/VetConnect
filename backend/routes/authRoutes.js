@@ -18,6 +18,7 @@ const storage = multer.diskStorage({
 });
 
 const upload = multer({ storage });
+
 router.put("/shelter/upload-image/:userId", upload.single("image"), async (req, res) => {
   try {
     const user = await User.findById(req.params.userId);
@@ -37,7 +38,6 @@ router.put("/shelter/upload-image/:userId", upload.single("image"), async (req, 
     res.status(500).json({ msg: "Upload failed" });
   }
 });
-
 
 // ✅ Get profile data for user or shelter
 router.get("/profile/:userId", async (req, res) => {
@@ -127,7 +127,6 @@ router.get('/admin/users', isAdmin, async (req, res) => {
   }
 });
 
-
 // New Toggle Ban/Unban option
 router.put('/admin/ban-user/:userId', isAdmin, async (req, res) => {
   try {
@@ -209,7 +208,6 @@ router.post('/register', async (req, res) => {
   }
 });
 
-
 // Login route
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
@@ -241,7 +239,6 @@ router.post('/login', async (req, res) => {
   }
 });
 
-
 // Google Login
 router.post('/google-login', async (req, res) => {
   const { name, email } = req.body;
@@ -267,7 +264,6 @@ router.post('/google-login', async (req, res) => {
     res.status(500).send("Server error");
   }
 });
-
 
 // Update User Type
 router.put('/update-user-type/:userId', async (req, res) => {
