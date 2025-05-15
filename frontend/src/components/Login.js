@@ -26,16 +26,19 @@ const Login = () => {
     setLoading(true);
 
     try {
+      console.log('Attempting login...'); // Debug log
       const response = await axios.post(
         `${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/auth/login`,
         formData
       );
 
+      console.log('Login response:', response.data); // Debug log
+
       const { token, userType, userId, name: userName, email: userEmail } = response.data;
 
-      // Store user data
+      // Store user data with consistent casing
       localStorage.setItem("token", token);
-      localStorage.setItem("userType", userType);
+      localStorage.setItem("userType", userType.toLowerCase()); // Store in lowercase
       localStorage.setItem("userId", userId);
       localStorage.setItem("userName", userName);
       localStorage.setItem("email", userEmail);
@@ -46,8 +49,8 @@ const Login = () => {
       // Close the modal
       window.dispatchEvent(new CustomEvent('closeModals'));
       
-      // Navigate based on user type
-      switch(userType) {
+      // Navigate based on user type (case-insensitive comparison)
+      switch(userType.toLowerCase()) {
         case 'admin':
           navigate("/admin-dashboard");
           break;
@@ -58,61 +61,45 @@ const Login = () => {
           navigate("/user-dashboard");
       }
     } catch (error) {
-      console.error('Login error:', error);
-      if (error.response?.data?.msg) {
-        setError(error.response.data.msg);
-      } else if (error.response?.status === 403) {
-        setError("Your account is suspended. Please contact support.");
-      } else if (error.response?.status === 401) {
-        setError("Invalid email or password");
-      } else if (!error.response) {
-        setError("Network error. Please check your connection.");
-      } else {
-        setError("An error occurred. Please try again.");
-      }
+      console.error('Login error:', error.response || error);
+      const errorMsg = error.response?.data?.msg || "Login failed. Please try again.";
+      setError(errorMsg);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div>
-      <form onSubmit={handleSubmit} className="modal-form">
-        {error && (
-          <div className="error-message" style={{ color: 'red', marginBottom: '10px' }}>
-            {error}
-          </div>
-        )}
-        <input
-          type="email"
-          name="email"
-          value={email}
-          onChange={handleChange}
-          placeholder="Email"
-          required
-          className="modal-input"
-          disabled={loading}
-        />
-        <input
-          type="password"
-          name="password"
-          value={password}
-          onChange={handleChange}
-          placeholder="Password"
-          required
-          className="modal-input"
-          disabled={loading}
-        />
-        <button 
-          type="submit" 
-          className="modal-button"
-          disabled={loading}
-        >
-          {loading ? 'Logging in...' : 'Login'}
+    <div className="auth-form">
+      {error && <div className="error-message">{error}</div>}
+      <form onSubmit={handleSubmit}>
+        <div className="form-group">
+          <input
+            type="email"
+            placeholder="Email"
+            name="email"
+            value={email}
+            onChange={handleChange}
+            required
+          />
+        </div>
+        <div className="form-group">
+          <input
+            type="password"
+            placeholder="Password"
+            name="password"
+            value={password}
+            onChange={handleChange}
+            required
+          />
+        </div>
+        <button type="submit" disabled={loading}>
+          {loading ? "Logging in..." : "Login"}
         </button>
       </form>
-      <div className="divider">or</div>
-      <GoogleButton disabled={loading} />
+      <div className="google-login">
+        <GoogleButton disabled={loading} />
+      </div>
     </div>
   );
 };

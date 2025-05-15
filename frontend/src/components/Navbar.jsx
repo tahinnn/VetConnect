@@ -43,9 +43,9 @@ const Navbar = () => {
 
   const handleDashboardRedirect = () => {
     const userType = localStorage.getItem('userType');
-    if (userType === 'Admin') navigate('/admin-dashboard');
-    else if (userType === 'Shelter') navigate('/shelter-dashboard');
-    else if (userType === 'User') navigate('/user-dashboard');
+    if (userType?.toLowerCase() === 'admin') navigate('/admin-dashboard');
+    else if (userType?.toLowerCase() === 'shelter') navigate('/shelter-dashboard');
+    else if (userType?.toLowerCase() === 'user') navigate('/user-dashboard');
     else navigate('/');
   };
 

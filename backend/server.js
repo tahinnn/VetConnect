@@ -26,6 +26,9 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Serve uploaded files statically
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 // Import routes
 const shelterBookingRoutes = require('./routes/shelterBookings');
 const testRoutes = require('./routes/testRoutes');
@@ -33,6 +36,7 @@ const authRoutes = require('./routes/authRoutes');
 const petRoutes = require('./routes/petRoutes');
 const appointmentRoutes = require('./routes/appointmentRoutes');
 const reviewRoutes = require('./routes/reviewRoutes');
+const adoptionRoutes = require('./routes/adoptions');
 
 // Default route
 app.get('/', (req, res) => {
@@ -46,6 +50,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/pets', petRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/appointments', appointmentRoutes);
+app.use('/api/adoptions', adoptionRoutes);
 
 // Connect to MongoDB
 const dbURI = process.env.MONGODB_URI;

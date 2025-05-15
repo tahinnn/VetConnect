@@ -27,6 +27,9 @@ import EmergencyVet from './components/EmergencyVet';
 import ChatBot from './components/ChatBot';
 import Forum from './components/Forum';
 import FAQ from './components/FAQ';
+import AdoptionForm from './components/AdoptionForm';
+import AdoptionPayment from './components/AdoptionPayment';
+import AdoptionSlip from './components/AdoptionSlip';
 // Profile-specific pages (used in ProfileRouter internally)
 import UserProfilePage from "./components/UserProfilePage";     
 import ShelterProfilePage from "./components/ShelterProfilePage"; 
@@ -36,6 +39,18 @@ import './styles.css';
 import { GoogleOAuthProvider } from "@react-oauth/google";
 
 const clientId = "230127747685-97hkrk2841dsf2l0fvo9gb3tnmj44let.apps.googleusercontent.com";
+
+// Protected Route Component
+const ProtectedRoute = ({ children, allowedUserType }) => {
+  const token = localStorage.getItem("token");
+  const userType = localStorage.getItem("userType")?.toLowerCase();
+  
+  if (!token || userType !== allowedUserType.toLowerCase()) {
+    return <Navigate to="/" replace />;
+  }
+  
+  return children;
+};
 
 function AppContent() {
   const location = useLocation();
@@ -81,11 +96,26 @@ function AppContent() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/select-user-type" element={<UserTypeSelect />} />
-        <Route path="/user-dashboard" element={<UserDashboard />} />
-        <Route path="/shelter-dashboard" element={<ShelterDashboard />} />
-        <Route path="/admin-dashboard" element={<AdminDashboard />} />
+        <Route path="/user-dashboard" element={
+          <ProtectedRoute allowedUserType="user">
+            <UserDashboard />
+          </ProtectedRoute>
+        } />
+        <Route path="/shelter-dashboard" element={
+          <ProtectedRoute allowedUserType="shelter">
+            <ShelterDashboard />
+          </ProtectedRoute>
+        } />
+        <Route path="/admin-dashboard" element={
+          <ProtectedRoute allowedUserType="admin">
+            <AdminDashboard />
+          </ProtectedRoute>
+        } />
         <Route path="/pets" element={<PetList />} />
         <Route path="/create-ad" element={<CreatePetAdPage />} />
+        <Route path="/adoption-form" element={<AdoptionForm />} />
+        <Route path="/adoption-payment" element={<AdoptionPayment />} />
+        <Route path="/adoption-slip" element={<AdoptionSlip />} />
         <Route path="/shelters" element={<ShelterList />} />
         <Route path="/shelter-booking/:shelterId" element={<ShelterBookingForm />} />
         <Route path="/shelter-payment" element={<ShelterPayment />} />

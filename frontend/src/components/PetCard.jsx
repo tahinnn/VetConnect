@@ -1,8 +1,14 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import "./PetCard.css";
 
 const PetCard = ({ pet }) => {
+  const navigate = useNavigate();
   const isShelterListing = pet?.owner?.userType === "Shelter";
+
+  const handleAdoptClick = () => {
+    navigate('/adoption-form', { state: { pet } });
+  };
 
   return (
     <div className="pet-card">
@@ -28,7 +34,7 @@ const PetCard = ({ pet }) => {
         <p><strong>Amount:</strong> Tk {pet.amount?.toLocaleString()}</p>
 
         <div className="button-wrapper">
-          <button className="adopt-btn">Adopt Me</button>
+          <button className="adopt-btn" onClick={handleAdoptClick}>Adopt Me</button>
         </div>
       </div>
     </div>

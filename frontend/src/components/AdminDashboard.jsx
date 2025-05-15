@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import "./AdminDashboard.css";
+import { useNavigate } from "react-router-dom";
 
 const AdminDashboard = () => {
+  const navigate = useNavigate();
   const [users, setUsers] = useState([]);
   const [pets, setPets] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
   const [searchTerm, setSearchTerm] = useState('');
   const [stats, setStats] = useState({
@@ -18,18 +21,39 @@ const AdminDashboard = () => {
   });
 
   const token = localStorage.getItem("token");
+  const userType = localStorage.getItem("userType")?.toLowerCase();
 
   useEffect(() => {
+    // Verify admin access
+    if (!token || userType !== 'admin') {
+      navigate('/');
+      return;
+    }
+
     const fetchData = async () => {
       try {
+        console.log('Fetching admin data...'); // Debug log
         const [userRes, petRes] = await Promise.all([
           axios.get("http://localhost:5000/api/auth/admin/users", {
-            headers: { "x-auth-token": token },
+            headers: { 
+              "x-auth-token": token,
+              "Authorization": `Bearer ${token}`
+            }
           }),
           axios.get("http://localhost:5000/api/auth/admin/pets", {
-            headers: { "x-auth-token": token },
-          }),
+            headers: { 
+              "x-auth-token": token,
+              "Authorization": `Bearer ${token}`
+            }
+          })
         ]);
+
+        console.log('User response:', userRes.data); // Debug log
+        console.log('Pet response:', petRes.data); // Debug log
+
+        if (!userRes.data || !petRes.data) {
+          throw new Error("Invalid data received from server");
+        }
 
         const users = userRes.data;
         const pets = petRes.data;
@@ -50,19 +74,27 @@ const AdminDashboard = () => {
           totalBookings
         });
 
-        setLoading(false);
       } catch (error) {
-        console.error("Admin fetch error:", error);
+        console.error("Admin fetch error:", error.response || error); // Enhanced error logging
+        setError(error.response?.data?.message || error.message || "Failed to load admin dashboard data");
+        if (error.response?.status === 401 || error.response?.status === 403) {
+          navigate('/');
+        }
+      } finally {
         setLoading(false);
       }
     };
+
     fetchData();
-  }, [token]);
+  }, [token, userType, navigate]);
 
   const toggleBanUser = async (userId) => {
     try {
       const res = await axios.put(`http://localhost:5000/api/auth/admin/toggle-ban/${userId}`, {}, {
-        headers: { "x-auth-token": token },
+        headers: { 
+          "x-auth-token": token,
+          "Authorization": `Bearer ${token}`
+        }
       });
       
       // Update users list and stats
@@ -81,7 +113,10 @@ const AdminDashboard = () => {
   const approvePet = async (petId) => {
     try {
       const res = await axios.put(`http://localhost:5000/api/auth/admin/approve-pet/${petId}`, {}, {
-        headers: { "x-auth-token": token },
+        headers: { 
+          "x-auth-token": token,
+          "Authorization": `Bearer ${token}`
+        }
       });
       
       // Update pets list and stats
@@ -108,9 +143,21 @@ const AdminDashboard = () => {
     );
   }
 
+  if (error) {
+    return (
+      <div className="admin-profile-container">
+        <div className="error-state">
+          <h2>Error Loading Dashboard</h2>
+          <p>{error}</p>
+          <button onClick={() => window.location.reload()}>Retry</button>
+        </div>
+      </div>
+    );
+  }
+
   const filteredUsers = users.filter(user => 
-    user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchTerm.toLowerCase())
+    user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    user.email?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
